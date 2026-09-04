@@ -3,6 +3,8 @@
  * Connects directly to localhost Express server (:5000) and FastAPI assessment service (:8000)
  */
 
+import { executeJavaScriptLocally } from './codeExecutionEngine';
+
 export const getApiBaseUrls = () => {
   const nodeUrl = localStorage.getItem('API_NODE_URL') || 'http://localhost:5000';
   const pythonUrl = localStorage.getItem('API_PYTHON_URL') || 'http://localhost:8000';
@@ -14,10 +16,54 @@ export const setApiBaseUrls = (nodeUrl, pythonUrl) => {
   if (pythonUrl) localStorage.setItem('API_PYTHON_URL', pythonUrl);
 };
 
+// -------------------------------------------------------------
+// Auth Token & Local Session Management
+// -------------------------------------------------------------
+export const getAuthToken = () => {
+  return localStorage.getItem('HIREPULSE_AUTH_TOKEN') || null;
+};
+
+export const setAuthToken = (token) => {
+  if (token) {
+    localStorage.setItem('HIREPULSE_AUTH_TOKEN', token);
+  } else {
+    localStorage.removeItem('HIREPULSE_AUTH_TOKEN');
+  }
+};
+
+export const clearAuthToken = () => {
+  localStorage.removeItem('HIREPULSE_AUTH_TOKEN');
+  localStorage.removeItem('HIREPULSE_AUTH_USER');
+};
+
+export const getStoredUser = () => {
+  try {
+    const raw = localStorage.getItem('HIREPULSE_AUTH_USER');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
+export const setStoredUser = (user) => {
+  if (user) {
+    localStorage.setItem('HIREPULSE_AUTH_USER', JSON.stringify(user));
+  } else {
+    localStorage.removeItem('HIREPULSE_AUTH_USER');
+  }
+};
+
 // Generic Fetch Wrapper with JSON response parsing and meaningful errors
 async function request(url, options = {}) {
   try {
-    const res = await fetch(url, options);
+    const token = getAuthToken();
+    const headers = { ...(options.headers || {}) };
+
+    if (token && !headers['Authorization']) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const res = await fetch(url, { ...options, headers });
     const data = await res.json().catch(() => null);
 
     if (!res.ok) {
@@ -36,6 +82,116 @@ async function request(url, options = {}) {
     throw error;
   }
 }
+
+// -------------------------------------------------------------
+// 0. User & Admin Authentication APIs (Zero Console Errors)
+// -------------------------------------------------------------
+export const registerUser = async ({ name, email, password, role = 'candidate', targetRole = 'Full Stack Developer', phone = '' }) => {
+  const { nodeUrl } = getApiBaseUrls();
+  const normalizedEmail = (email || '').toLowerCase().trim();
+  const payload = { name: name.trim(), email: normalizedEmail, password, role, targetRole, phone };
+
+  const res = await fetch(`${nodeUrl}/api/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Registration failed');
+  }
+  if (data.token) setAuthToken(data.token);
+  if (data.user) setStoredUser(data.user);
+  return data;
+};
+
+export const loginUser = async ({ email, password }) => {
+  const { nodeUrl } = getApiBaseUrls();
+  const normalizedEmail = (email || '').toLowerCase().trim();
+  const payload = { email: normalizedEmail, password };
+
+  const res = await fetch(`${nodeUrl}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Login failed');
+  }
+  if (data.token) setAuthToken(data.token);
+  if (data.user) setStoredUser(data.user);
+  return data;
+};
+
+export const getCurrentUser = async () => {
+  const token = getAuthToken();
+  if (!token) {
+    return { success: false, user: null };
+  }
+
+  const { nodeUrl } = getApiBaseUrls();
+  const res = await fetch(`${nodeUrl}/api/auth/me`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    clearAuthToken();
+    return { success: false, user: null };
+  }
+  if (data.user) {
+    setStoredUser(data.user);
+  }
+  return data;
+};
+
+export const getAllRegisteredUsers = async ({ search = '', role = '', page = 1, limit = 10 } = {}) => {
+  const { nodeUrl } = getApiBaseUrls();
+  const params = new URLSearchParams();
+  if (search) params.append('search', search);
+  if (role) params.append('role', role);
+  if (page) params.append('page', page);
+  if (limit) params.append('limit', limit);
+
+  const res = await fetch(`${nodeUrl}/api/auth/users?${params.toString()}`, {
+    headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Failed to fetch registered users');
+  }
+  return data;
+};
+
+export const updateUserRole = async (userId, { role, status }) => {
+  const { nodeUrl } = getApiBaseUrls();
+  const res = await fetch(`${nodeUrl}/api/auth/users/${userId}/role`, {
+    method: 'PUT',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${getAuthToken()}`
+    },
+    body: JSON.stringify({ role, status })
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Failed to update user role');
+  }
+  return data;
+};
+
+export const deleteUserAccount = async (userId) => {
+  const { nodeUrl } = getApiBaseUrls();
+  const res = await fetch(`${nodeUrl}/api/auth/users/${userId}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Failed to delete user account');
+  }
+  return data;
+};
 
 // -------------------------------------------------------------
 // 1. Resume ATS Screening API (Node.js Express :5000)
@@ -61,7 +217,6 @@ export const startProctorSession = async ({ candidateId, candidateName, targetRo
 };
 
 export const logProctorViolation = async ({ sessionId, violationType, details }) => {
-
   const { nodeUrl } = getApiBaseUrls();
   return request(`${nodeUrl}/api/proctor/violation`, {
     method: 'POST',
@@ -71,7 +226,6 @@ export const logProctorViolation = async ({ sessionId, violationType, details })
 };
 
 export const analyzeCameraFrameBackend = async ({
-
   sessionId,
   candidateId,
   facesCount,
@@ -91,7 +245,7 @@ export const analyzeCameraFrameBackend = async ({
       headAxis,
       phoneDetected,
       audioDb,
-      timestamp: timestamp || Date.now()
+      timestamp
     })
   });
 };
@@ -105,30 +259,9 @@ export const terminateProctorSession = async ({ sessionId, reason }) => {
   });
 };
 
-
-export const completeProctorSession = async ({
-  sessionId,
-  candidateId,
-  score,
-  correctCount,
-  totalQuestions,
-  submissionId,
-  proctorMetrics
-}) => {
+export const getProctorSessionStatus = async (sessionId) => {
   const { nodeUrl } = getApiBaseUrls();
-  return request(`${nodeUrl}/api/proctor/complete`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      sessionId,
-      candidateId,
-      score,
-      correctCount,
-      totalQuestions,
-      submissionId,
-      proctorMetrics
-    })
-  });
+  return request(`${nodeUrl}/api/proctor/session/${sessionId}`);
 };
 
 export const getAllProctorSessions = async () => {
@@ -136,105 +269,144 @@ export const getAllProctorSessions = async () => {
   return request(`${nodeUrl}/api/proctor/sessions`);
 };
 
-export const getProctorSessionById = async (id) => {
-  const { nodeUrl } = getApiBaseUrls();
-  return request(`${nodeUrl}/api/proctor/status/${id}`);
-};
+// -------------------------------------------------------------
+// 3. Coding Assessment APIs (Node.js :5000 & FastAPI :8000)
+// -------------------------------------------------------------
+export const fetchAssessmentQuestions = async ({ role = 'fullstack', candidateId = null } = {}) => {
+  const { nodeUrl, pythonUrl } = getApiBaseUrls();
+  const queryParams = new URLSearchParams();
+  if (role) queryParams.append('role', role);
+  if (candidateId) queryParams.append('candidateId', candidateId);
 
-export const fetchAssessmentQuestions = async ({ role = 'fullstack', candidateId = '' }) => {
-  const { pythonUrl, nodeUrl } = getApiBaseUrls();
-  const queryParams = new URLSearchParams({ role, candidateId }).toString();
-
-  // Try Express backend first
+  // 1. Try Node.js Express backend
   try {
-    const res = await request(`${nodeUrl}/api/assessment/questions?${queryParams}`);
-    if (res && res.questions && res.questions.length > 0) {
-      return res;
+    const nodeRes = await request(`${nodeUrl}/api/assessment/questions?${queryParams.toString()}`);
+    if (nodeRes && nodeRes.success && nodeRes.questions?.length > 0) {
+      return nodeRes;
     }
   } catch (err) {
-    console.warn('Express questions fetch fallback to Python:', err.message);
+    console.warn('Node.js assessment endpoint unavailable, trying Python FastAPI:', err.message);
   }
 
-  // Try FastAPI backend
+  // 2. Try Python FastAPI microservice
   try {
-    const pyRes = await request(`${pythonUrl}/api/assessment/questions?${queryParams}`);
-    if (pyRes && pyRes.questions && pyRes.questions.length > 0) {
+    const pyRes = await request(`${pythonUrl}/api/assessment/questions?${queryParams.toString()}`);
+    if (pyRes && pyRes.success && pyRes.questions?.length > 0) {
       return pyRes;
     }
-  } catch (err) {
-    console.warn('FastAPI questions fetch fallback:', err.message);
+  } catch (pyErr) {
+    console.warn('FastAPI questions endpoint unavailable:', pyErr.message);
   }
 
-  return {
-    success: true,
-    role,
-    questions: []
-  };
+  throw new Error('Failed to retrieve assessment questions from both Express (:5000) and FastAPI (:8000).');
 };
 
 export const getAssessmentCandidate = async (candidateId) => {
-  const { pythonUrl, nodeUrl } = getApiBaseUrls();
+  const { nodeUrl, pythonUrl } = getApiBaseUrls();
   try {
-    // Try FastAPI first
-    const res = await request(`${pythonUrl}/api/assessment/${candidateId}`);
-    return res;
+    return await request(`${nodeUrl}/api/admin/candidates/${candidateId}`);
   } catch {
-    // Fallback to Express backend
     try {
-      const nodeRes = await request(`${nodeUrl}/api/admin/candidates/${candidateId}`);
-      return {
-        success: true,
-        candidate: {
-          fullName: nodeRes.candidate?.candidateDetails?.fullName || 'Candidate',
-          targetRole: nodeRes.candidate?.candidateDetails?.targetRole || 'Developer',
-          finalAtsScore: nodeRes.candidate?.finalAtsScore || 0
-        }
-      };
+      return await request(`${pythonUrl}/api/assessment/${candidateId}`);
     } catch {
-      return {
-        success: true,
-        candidate: {
-          fullName: 'Candidate',
-          targetRole: 'Full Stack Developer',
-          finalAtsScore: 85
-        }
-      };
+      return null;
     }
   }
 };
 
-export const submitAssessmentExam = async ({ candidateId, sessionId, answers, score, correctCount, totalQuestions, proctorMetrics }) => {
-  const { pythonUrl, nodeUrl } = getApiBaseUrls();
-  
-  // Also notify Node.js proctor session
+export const executeCandidateCode = async ({
+  code,
+  language = 'javascript',
+  questionId,
+  includeHidden = false,
+  customInput = null,
+  functionName = '',
+  visibleTestCases = [],
+  hiddenTestCases = []
+}) => {
+  const { nodeUrl, pythonUrl } = getApiBaseUrls();
+
+  // 1. Try Node.js Express backend execution
   try {
-    await completeProctorSession({
-      sessionId,
-      candidateId,
-      score,
-      correctCount,
-      totalQuestions,
-      submissionId: `SUB-${Date.now()}`,
-      proctorMetrics
+    const res = await request(`${nodeUrl}/api/assessment/execute-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, language, questionId, includeHidden, customInput })
     });
-  } catch (e) {
-    console.warn('Node session complete notice warning:', e.message);
+    if (res && res.success) {
+      return res;
+    }
+  } catch (nodeErr) {
+    console.warn('Node execute-code error, attempting fallback:', nodeErr.message);
   }
 
+  // 2. Try Python FastAPI backend execution
   try {
+    const pyRes = await request(`${pythonUrl}/api/assessment/execute-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, language, questionId, includeHidden, customInput })
+    });
+    if (pyRes && pyRes.success) {
+      return pyRes;
+    }
+  } catch (pyErr) {
+    console.warn('FastAPI execute-code error, fallback to browser engine:', pyErr.message);
+  }
+
+  // 3. Client-side sandbox evaluation fallback (100% resilient offline)
+  return executeJavaScriptLocally({
+    code,
+    functionName,
+    visibleTestCases,
+    hiddenTestCases,
+    includeHidden
+  });
+};
+
+export const submitAssessmentExam = async ({
+  candidateId,
+  sessionId,
+  answers = [],
+  score = 0,
+  correctCount = 0,
+  totalQuestions = 0,
+  totalTestCasesPassed = 0,
+  totalTestCases = 0,
+  visiblePassed = 0,
+  hiddenPassed = 0,
+  codingSubmissions = [],
+  proctorMetrics
+}) => {
+  const { nodeUrl, pythonUrl } = getApiBaseUrls();
+
+  const payload = {
+    candidateId: candidateId || 'anonymous',
+    sessionId: sessionId || 'session_default',
+    answers,
+    score,
+    correctCount,
+    totalQuestions,
+    totalTestCasesPassed,
+    totalTestCases,
+    visiblePassed,
+    hiddenPassed,
+    codingSubmissions,
+    proctorMetrics
+  };
+
+  try {
+    return await request(`${nodeUrl}/api/assessment/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  } catch (nodeErr) {
     return await request(`${pythonUrl}/api/assessment/submit`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ candidateId, sessionId, answers, score })
+      body: JSON.stringify(payload)
     });
-  } catch {
-    // Graceful fallback for local evaluation if Python backend is offline
-    return {
-      success: true,
-      submissionId: 'SUB-' + Date.now(),
-      score,
-      note: 'Saved in MongoDB backend database'
-    };
   }
 };
 

@@ -36,7 +36,25 @@ const ProctorSessionSchema = new mongoose.Schema(
       correctCount: { type: Number, default: 0 },
       totalQuestions: { type: Number, default: 0 },
       submissionId: { type: String, default: '' },
-      submittedAt: { type: Date }
+      submittedAt: { type: Date },
+      totalTestCasesPassed: { type: Number, default: 0 },
+      totalTestCases: { type: Number, default: 0 },
+      visiblePassed: { type: Number, default: 0 },
+      hiddenPassed: { type: Number, default: 0 },
+      codingSubmissions: [
+        {
+          questionId: { type: Number },
+          title: { type: String },
+          language: { type: String },
+          code: { type: String },
+          visiblePassed: { type: Number },
+          visibleTotal: { type: Number },
+          hiddenPassed: { type: Number },
+          hiddenTotal: { type: Number },
+          allPassed: { type: Boolean },
+          runtimeMs: { type: Number }
+        }
+      ]
     },
     proctorMetrics: {
       axisStabilityScore: { type: Number, default: 100 },
@@ -58,6 +76,7 @@ const ProctorSessionSchema = new mongoose.Schema(
             'unauthorized_object',
             'suspicious_audio_noise',
             'speaking_detected',
+            'loud_human_voice',
             'tab_switch',
             'fullscreen_exit',
             'window_blur',

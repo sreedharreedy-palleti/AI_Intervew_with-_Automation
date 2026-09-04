@@ -12,6 +12,9 @@ ViolationType = Literal[
     "no_face_detected",
     "multiple_faces_detected",
     "mobile_phone_detected",
+    "cell_phone_detected",
+    "head_off_axis",
+    "gaze_deviation",
     "smartwatch_or_wearable",
     "unauthorized_object",
     "background_person_or_shadow",
@@ -20,18 +23,23 @@ ViolationType = Literal[
     "fullscreen_exit",
     "window_blur",
     "camera_off",
-    "mic_muted"
+    "mic_muted",
+    "speaking_detected",
+    "loud_human_voice",
+    "suspicious_audio_noise"
 ]
 
 # Violations that cause immediate exam auto-exit / termination
 CRITICAL_TERMINATION_VIOLATIONS = {
     "multiple_faces_detected",
     "mobile_phone_detected",
+    "cell_phone_detected",
     "smartwatch_or_wearable",
     "unauthorized_object",
     "background_person_or_shadow",
     "excessive_screen_motion",
-    "no_face_detected"
+    "speaking_detected",
+    "loud_human_voice"
 }
 
 class StartSessionRequest(BaseModel):

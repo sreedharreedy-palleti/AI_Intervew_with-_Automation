@@ -152,29 +152,22 @@ const analyzeCameraFrame = async (req, res) => {
     let terminationReason = '';
     let detectedViolation = null;
 
-    // Rule 1: STRICT SINGLE CANDIDATE ONLY — If multiple people appear, terminate immediately
+    // Rule 1: Zero-Tolerance Multi-Person Intrusion (Instant Exit)
     if (facesCount > 1) {
       shouldTerminate = true;
-      terminationReason = `Unauthorized intrusion: Multiple faces detected (${facesCount} persons present)`;
+      terminationReason = `Security Policy Breach: Multiple individuals detected (${facesCount} persons present). Exam terminated.`;
       detectedViolation = {
         type: 'multiple_faces_detected',
         details: terminationReason
       };
     }
-    // Rule 2: STRICT NO PROHIBITED DEVICES — If phone or unauthorized device appears, terminate immediately
+    // Rule 2: Zero-Tolerance Mobile Phone / Electronic Device (Instant Exit)
     else if (phoneDetected) {
       shouldTerminate = true;
-      terminationReason = 'Unauthorized mobile phone or electronic device detected';
+      terminationReason = 'Security Policy Breach: Unauthorized mobile phone or electronic device detected in camera viewport. Exam terminated.';
       detectedViolation = {
         type: 'cell_phone_detected',
         details: terminationReason
-      };
-    }
-    // Rule 3: Head turned severely off-axis
-    else if (headAxis && headAxis.isOffAxis) {
-      detectedViolation = {
-        type: 'head_off_axis',
-        details: `Candidate head turned off-center: Yaw ${headAxis.yaw}°, Pitch ${headAxis.pitch}°`
       };
     }
 
@@ -184,11 +177,6 @@ const analyzeCameraFrame = async (req, res) => {
         details: detectedViolation.details,
         timestamp: new Date()
       });
-
-      if (session.violations.length >= 3) {
-        shouldTerminate = true;
-        terminationReason = 'Exceeded maximum violation strikes limit (3/3)';
-      }
     }
 
     if (shouldTerminate) {

@@ -1,11 +1,11 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import './ResumeScreener.css';
 import { 
   UploadCloud, 
   FileText, 
   CheckCircle2, 
   AlertCircle, 
   Sparkles, 
-  Send, 
   ArrowRight, 
   User, 
   Mail, 
@@ -17,12 +17,11 @@ import {
   TrendingUp,
   Award,
   AlertTriangle,
-  Lightbulb,
   Check,
   X
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { uploadAndAnalyzeResume } from '../services/api';
+import { uploadAndAnalyzeResume } from '../../services/api';
 
 const PRESET_TEMPLATES = [
   {
@@ -47,17 +46,30 @@ const PRESET_TEMPLATES = [
   }
 ];
 
-export default function ResumeScreener({ onStartExam, showToast }) {
+export default function ResumeScreener({ onStartExam, showToast, currentUser }) {
   const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
-    targetRole: 'Full Stack React & Node Developer',
+    fullName: currentUser?.name || '',
+    email: currentUser?.email || '',
+    phone: currentUser?.phone || '',
+    targetRole: currentUser?.targetRole || 'Full Stack React & Node Developer',
     experienceYears: 3,
     expectedSalary: '$85,000 / yr',
     portfolioOrLinkedIn: 'https://github.com/developer',
     jobDescription: PRESET_TEMPLATES[0].description
   });
+
+  // Sync form data if currentUser logs in
+  useEffect(() => {
+    if (currentUser) {
+      setFormData((prev) => ({
+        ...prev,
+        fullName: prev.fullName || currentUser.name || '',
+        email: prev.email || currentUser.email || '',
+        phone: prev.phone || currentUser.phone || '',
+        targetRole: prev.targetRole || currentUser.targetRole || 'Full Stack React & Node Developer'
+      }));
+    }
+  }, [currentUser]);
 
   const [resumeFile, setResumeFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -633,11 +645,11 @@ export default function ResumeScreener({ onStartExam, showToast }) {
                   })}
                   id="proceed-to-proctored-exam-btn"
                 >
-                  <span>Proceed to Proctored Assessment Room</span>
+                  <span>Proceed to Proctored Coding Round</span>
                   <ArrowRight size={18} />
                 </button>
                 <span className="exam-hint">
-                  Proctored exam session will monitor camera, microphone, and anti-cheat triggers.
+                  Interactive coding IDE with 3 visible test cases, hidden states evaluation, and 3D camera proctoring.
                 </span>
               </div>
             </div>

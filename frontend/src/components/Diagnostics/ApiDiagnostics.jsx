@@ -1,23 +1,19 @@
 import React, { useState } from 'react';
+import './ApiDiagnostics.css';
 import { 
   Cpu, 
   Server, 
-  CheckCircle2, 
-  AlertCircle, 
   Play, 
   RefreshCw, 
   Settings, 
-  Database, 
-  Radio, 
   Terminal
 } from 'lucide-react';
 import { 
   getApiBaseUrls, 
   setApiBaseUrls, 
-  checkHealthStatus, 
   getDashboardStats, 
   getAllCandidates 
-} from '../services/api';
+} from '../../services/api';
 
 export default function ApiDiagnostics({ healthStatus, onRefreshHealth, showToast }) {
   const currentUrls = getApiBaseUrls();
