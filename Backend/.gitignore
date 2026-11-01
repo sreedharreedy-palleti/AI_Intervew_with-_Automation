@@ -12,5 +12,9 @@ uploads/
 # Virtual environment and local files
 venv/
 .venv/
-.env.local
+# Environment and secret files
+.env
+.env.*
+!.env.example
+
 
