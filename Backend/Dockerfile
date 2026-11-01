@@ -8,7 +8,9 @@ FROM python:3.11-slim
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PORT=8000
+    PORT=8000 \
+    MONGO_URI="mongodb+srv://rnani7046_db_user:yP12QMpKzf1iOzEe@cluster0.g38ahsr.mongodb.net" \
+    DATABASE_NAME="interview_db"
 
 # Install system dependencies required by OpenCV, YOLO11, and health checks
 RUN apt-get update && apt-get install -y --no-install-recommends \

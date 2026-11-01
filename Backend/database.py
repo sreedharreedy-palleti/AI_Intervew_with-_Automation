@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Read MONGO_URI from .env, or fall back to MONGO_URL
-MONGO_URI = os.getenv("MONGO_URI") or os.getenv("MONGO_URL") or "mongodb://localhost:27017"
+MONGO_URI = os.getenv("MONGO_URI") or os.getenv("MONGO_URL") or "mongodb+srv://rnani7046_db_user:yP12QMpKzf1iOzEe@cluster0.g38ahsr.mongodb.net"
 DATABASE_NAME = os.getenv("DATABASE_NAME", "interview_db")
 
 client: AsyncIOMotorClient = None
