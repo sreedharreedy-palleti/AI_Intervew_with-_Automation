@@ -109,4 +109,10 @@ export const adminApi = {
     const res = await apiClient.delete(API_ROUTES.ADMIN_USER_DELETE(userId));
     return res.data;
   },
+
+  // --- Live Analytics & Data Visualizations ---
+  getDashboardAnalytics: async () => {
+    const res = await apiClient.get(API_ROUTES.ADMIN_ANALYTICS_DASHBOARD);
+    return res.data;
+  },
 };

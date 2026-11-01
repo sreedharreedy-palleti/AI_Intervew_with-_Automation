@@ -1,15 +1,23 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { courseApi } from '../services/courseApi';
+import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import Loader from '../../components/common/Loader';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, BrainCircuit } from 'lucide-react';
 import MyEnrollmentsList from '../enrollment/MyEnrollmentsList';
+
+const DEMO_EMAILS = ['23091a32j4@rgmcet.edu.in'];
 
 const MyEnrollments = () => {
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const { user } = useAuth();
   const toast = useToast();
+
+  const isDemoAccount =
+    Boolean(user?.email && DEMO_EMAILS.includes(user.email.trim().toLowerCase()));
 
   const fetchEnrolledCourses = async () => {
     setIsLoading(true);
@@ -32,7 +40,7 @@ const MyEnrollments = () => {
     <div className="page-wrapper">
       <div className="app-container">
         {/* Page Header */}
-        <div style={{ marginBottom: '2.5rem' }}>
+        <div style={{ marginBottom: '2rem' }}>
           <div
             style={{
               display: 'inline-flex',
@@ -52,6 +60,80 @@ const MyEnrollments = () => {
             Courses and tracks you have submitted candidate resumes for.
           </p>
         </div>
+
+        {/* Free AI Interview Demo Experiment Banner for Authorized Test Accounts */}
+        {isDemoAccount && (
+          <div
+            style={{
+              marginBottom: '2rem',
+              padding: '1.25rem 1.5rem',
+              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.16) 0%, rgba(139, 92, 246, 0.16) 100%)',
+              border: '1px solid rgba(129, 140, 248, 0.45)',
+              borderRadius: 'var(--radius-lg)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '1rem',
+              boxShadow: '0 8px 24px rgba(99, 102, 241, 0.12)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div
+                style={{
+                  width: '46px',
+                  height: '46px',
+                  borderRadius: '12px',
+                  background: 'rgba(99, 102, 241, 0.25)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#a5b4fc',
+                }}
+              >
+                <BrainCircuit size={26} />
+              </div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>Free AI Interview Demo Access Activated</span>
+                  <span
+                    style={{
+                      fontSize: '0.72rem',
+                      background: '#4f46e5',
+                      color: '#fff',
+                      padding: '2px 8px',
+                      borderRadius: '10px',
+                      fontWeight: 700,
+                    }}
+                  >
+                    TESTING MODE
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#c7d2fe', marginTop: '3px' }}>
+                  Account <strong>{user?.email}</strong> is granted VIP bypass to freely test the Stage 2 AI Technical Interview (including Camera & Audio Access checks, dynamic Gemini questions, live transcription, and real-time scorecards).
+                </div>
+              </div>
+            </div>
+
+            <Link
+              to="/interview/start"
+              className="btn btn-primary"
+              style={{
+                textDecoration: 'none',
+                background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                boxShadow: '0 4px 16px rgba(99, 102, 241, 0.45)',
+                fontWeight: 700,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '0.65rem 1.25rem',
+              }}
+            >
+              <Sparkles size={16} />
+              <span>Launch Live AI Interview</span>
+            </Link>
+          </div>
+        )}
 
         {/* Content list */}
         {isLoading ? (

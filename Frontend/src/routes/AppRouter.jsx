@@ -24,7 +24,7 @@ import MyEnrollments from '../pages/user/MyEnrollments';
 
 // Assignment / Interview Simulation Page
 import AssignmentView from '../pages/assignment/AssignmentView';
-import DownloadApp from '../pages/DownloadApp';
+import InterviewView from '../pages/interview/InterviewView';
 
 // Admin Pages
 import AdminDashboard from '../pages/admin/AdminDashboard';
@@ -33,6 +33,7 @@ import AdminCourses from '../pages/admin/AdminCourses';
 import AdminCourseRoster from '../pages/admin/AdminCourseRoster';
 import AdminUsers from '../pages/admin/AdminUsers';
 import AdminUserDetail from '../pages/admin/AdminUserDetail';
+import AdminAIChatbot from '../pages/admin/AdminAIChatbot';
 
 // 404 Page
 import NotFound from '../pages/NotFound';
@@ -93,7 +94,10 @@ const AppRouter = () => {
 
         {/* Shortlisted Assignment Route */}
         <Route path="/assignment/:assignmentToken" element={<AssignmentView />} />
-        <Route path="/download-app" element={<DownloadApp />} />
+        
+        {/* Stage 2 AI Technical Interview Route */}
+        <Route path="/interview/:interviewToken" element={<InterviewView />} />
+        <Route path="/download-app" element={<Navigate to="/courses" replace />} />
 
         {/* 404 inside MainLayout */}
         <Route path="/404" element={<NotFound />} />
@@ -115,6 +119,8 @@ const AppRouter = () => {
         <Route path="courses/:courseId/roster" element={<AdminCourseRoster />} />
         <Route path="users" element={<AdminUsers />} />
         <Route path="users/:userId" element={<AdminUserDetail />} />
+        <Route path="ai-assistant" element={<AdminAIChatbot />} />
+        <Route path="chatbot" element={<Navigate to="/admin/ai-assistant" replace />} />
       </Route>
 
       {/* Global Fallback Route */}

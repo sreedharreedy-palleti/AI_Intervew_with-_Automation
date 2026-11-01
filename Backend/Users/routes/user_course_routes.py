@@ -8,6 +8,7 @@ from Users.services.user_course_service import (
     service_get_user_courses,
     service_get_user_course_detail,
     service_enroll_user_with_ai,
+    service_get_resume_file,
 )
 
 router = APIRouter()
@@ -20,6 +21,17 @@ async def get_courses_catalog(
     current_user: dict = Depends(get_current_user),
 ):
     return await service_get_user_courses(str(current_user["_id"]), db, current_user.get("email", ""))
+
+
+@router.get("/resume/{resume_id}")
+async def get_candidate_resume(
+    resume_id: str,
+    db: AsyncIOMotorDatabase = Depends(get_database),
+):
+    """
+    Streams the candidate's resume directly from MongoDB.
+    """
+    return await service_get_resume_file(resume_id, db)
 
 
 @router.get("/{course_id}", response_model=CourseUserResponse)

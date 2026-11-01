@@ -11,7 +11,7 @@ const CourseSyllabusSection = () => {
       </div>
       <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
         When applying, your uploaded PDF/Word resume is parsed into raw text and analyzed by
-        our Ollama ATS matching engine.
+        our Gemini AI ATS matching engine.
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>

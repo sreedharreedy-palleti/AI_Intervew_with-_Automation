@@ -1,0 +1,16 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Uploads and resume files (stored directly in MongoDB)
+uploads/
+*.pdf
+*.docx
+*.doc
+
+# Virtual environment and local files
+venv/
+.venv/
+.env.local
+

@@ -68,7 +68,7 @@ const AdminEnrollments = () => {
   const [scheduleFormData, setScheduleFormData] = useState({
     assignment_datetime: '',
     duration_minutes: 60,
-    assignment_policy: `1. Time Limit: The technical simulation must be completed within 60 minutes.\n2. Proctoring: Ensure active webcam, microphone, and full-screen browser mode.\n3. Zero Tolerance: Tab switching and external code assistance are strictly prohibited.\n4. Submission: Answers must be submitted before the countdown timer expires.`,
+    assignment_policy: `1. Time Limit: The technical simulation must be completed within 60 minutes.\n2. Browser Requirement: Must be opened and completed exclusively in Google Chrome browser.\n3. Proctoring: Ensure active webcam, microphone, and full-screen browser mode.\n4. Zero Tolerance: Tab switching and external code assistance are strictly prohibited.\n5. Submission: Answers must be submitted before the countdown timer expires.`,
     send_email: true,
   });
   const [scheduleLoading, setScheduleLoading] = useState(false);
@@ -233,7 +233,7 @@ const AdminEnrollments = () => {
     setScheduleFormData({
       assignment_datetime: getTomorrowDefaultDateTime(),
       duration_minutes: 60,
-      assignment_policy: `1. Time Limit: The technical simulation must be completed within 60 minutes.\n2. Proctoring: Ensure active webcam, microphone, and full-screen browser mode.\n3. Zero Tolerance: Tab switching and external code assistance are strictly prohibited.\n4. Submission: Answers must be submitted before the countdown timer expires.`,
+      assignment_policy: `1. Time Limit: The technical simulation must be completed within 60 minutes.\n2. Browser Requirement: Must be opened and completed exclusively in Google Chrome browser.\n3. Proctoring: Ensure active webcam, microphone, and full-screen browser mode.\n4. Zero Tolerance: Tab switching and external code assistance are strictly prohibited.\n5. Submission: Answers must be submitted before the countdown timer expires.`,
       send_email: true,
     });
     setIsScheduleModalOpen(true);
@@ -688,7 +688,25 @@ const AdminEnrollments = () => {
                               <span>Shortlisted</span>
                             </div>
 
-                            {student.assignment_datetime && (
+                            {student.interview_status === 'completed' ? (
+                              <div style={{ marginTop: '0.35rem' }}>
+                                <Badge variant="success" style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem' }}>
+                                  ★ Interview: {student.interview_verdict || 'Completed'} ({Math.round(student.interview_score || 0)}%)
+                                </Badge>
+                              </div>
+                            ) : student.assignment_status === 'submitted' ? (
+                              <div style={{ marginTop: '0.35rem' }}>
+                                {(student.assignment_score ?? 0) >= 50 ? (
+                                  <Badge variant="success" style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem' }}>
+                                    ★ AI Interview Qualified ({Math.round(student.assignment_score ?? 0)}%)
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="warning" style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem' }}>
+                                    Score: {Math.round(student.assignment_score ?? 0)}% (&lt;50%)
+                                  </Badge>
+                                )}
+                              </div>
+                            ) : student.assignment_datetime ? (
                               <div
                                 style={{
                                   marginTop: '0.35rem',
@@ -700,7 +718,7 @@ const AdminEnrollments = () => {
                                 }}
                               >
                                 <Calendar size={11} color="#38bdf8" />
-                                <span>{student.assignment_datetime.replace('T', ' ')}</span>
+                                <span>{student.assignment_datetime.replace('T', ' ')} ({student.duration_minutes || 60}m)</span>
                                 {student.assignment_email_sent_at && (
                                   <span
                                     title="Gmail notification sent"
@@ -709,6 +727,20 @@ const AdminEnrollments = () => {
                                     <Mail size={11} />
                                   </span>
                                 )}
+                              </div>
+                            ) : (
+                              <div
+                                style={{
+                                  marginTop: '0.35rem',
+                                  fontSize: '0.73rem',
+                                  color: '#f59e0b',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.35rem',
+                                }}
+                              >
+                                <Clock size={11} color="#f59e0b" />
+                                <span>Schedule Pending</span>
                               </div>
                             )}
                           </div>

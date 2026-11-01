@@ -21,14 +21,15 @@ const SecurityLockModal = ({
           <div style={{ width: '64px', height: '64px', borderRadius: '16px', background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', display: 'grid', placeItems: 'center', margin: '0 auto 1.25rem', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
             <Lock size={32} />
           </div>
-          <Badge variant="primary" style={{ marginBottom: '0.75rem' }}>
-            Candidate Verification
-          </Badge>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+            <Badge variant="primary">Candidate Verification</Badge>
+            <Badge variant="success">Google Chrome Verified</Badge>
+          </div>
           <h1 style={{ fontSize: '1.85rem', fontWeight: 800, marginBottom: '0.75rem', color: '#f8fafc' }}>
             Access Your AI Coding Assessment
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: 1.6, maxWidth: '540px', margin: '0 auto' }}>
-            Please enter your Username and Unique Exam Code from your invitation email to begin your coding assessment.
+            Please enter your Username and Unique Exam Code from your invitation email. This assessment runs exclusively inside Google Chrome — no app download required.
           </p>
         </div>
 

@@ -20,7 +20,7 @@ const SubmitConfirmModal = ({
       <div style={{ padding: '0.5rem 0' }}>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '1.25rem', lineHeight: 1.6 }}>
           You are about to submit your solutions for both coding problems. Our evaluation engine and
-          Ollama AI will test all public and hidden test cases, compile code metrics, and finalize your score.
+          Gemini AI will test all public and hidden test cases, compile code metrics, and finalize your score.
         </p>
 
         <div

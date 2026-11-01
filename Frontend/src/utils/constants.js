@@ -39,6 +39,9 @@ export const API_ROUTES = {
   ADMIN_USER_DETAIL: (userId) => `/api/v1/admin/users/${userId}`,
   ADMIN_USER_UPDATE: (userId) => `/api/v1/admin/users/${userId}`,
   ADMIN_USER_DELETE: (userId) => `/api/v1/admin/users/${userId}`,
+
+  // Admin Live Analytics & Visualizations
+  ADMIN_ANALYTICS_DASHBOARD: '/api/v1/admin/analytics/dashboard',
 };
 
 export const USER_ROLES = {

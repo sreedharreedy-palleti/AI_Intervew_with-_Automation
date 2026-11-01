@@ -17,6 +17,11 @@ class CourseUserResponse(BaseModel):
     assignment_token: Optional[str] = None
     assignment_status: Optional[str] = None
     assignment_score: Optional[float] = None
+    assignment_datetime: Optional[str] = None
+    duration_minutes: Optional[int] = 60
+    interview_token: Optional[str] = None
+    interview_status: Optional[str] = None
+    is_demo_interview_access: Optional[bool] = False
 
     model_config = ConfigDict(from_attributes=True)
 

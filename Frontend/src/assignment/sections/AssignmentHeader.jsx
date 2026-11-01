@@ -24,7 +24,7 @@ const AssignmentHeader = ({
             <Badge variant="success">Shortlisted Candidate</Badge>
           </div>
           <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-            Candidate: <strong style={{ color: '#e5e7eb' }}>{candidateName}</strong> • Powered by Ollama & Llama 3
+            Candidate: <strong style={{ color: '#e5e7eb' }}>{candidateName}</strong> • Powered by Gemini AI
           </p>
         </div>
       </div>

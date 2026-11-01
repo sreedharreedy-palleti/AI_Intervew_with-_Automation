@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import Navbar from '../common/Navbar';
 import { Sparkles, Heart } from 'lucide-react';
+import ChatbotWidget from '../../chatbot/ChatbotWidget';
 
 const MainLayout = () => {
   return (
@@ -48,7 +49,7 @@ const MainLayout = () => {
           </div>
 
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            Empowering talent with Ollama ATS intelligent matching & automated assessment.
+            Empowering talent with Gemini AI ATS intelligent matching & automated assessment.
           </p>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', fontSize: '0.85rem' }}>
@@ -56,6 +57,9 @@ const MainLayout = () => {
           </div>
         </div>
       </footer>
+
+      {/* HirePulse Platform AI Chatbot Widget */}
+      <ChatbotWidget />
     </div>
   );
 };

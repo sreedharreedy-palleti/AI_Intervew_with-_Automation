@@ -14,7 +14,6 @@ SMTP_CREDENTIAL = os.getenv("SMTP_PASSWORD", "").replace(" ", "")
 SENDER_DISPLAY = os.getenv("EMAILS_FROM_NAME", "AI Assessment Portal")
 CLIENT_ORIGIN = os.getenv("FRONTEND_URL", "http://localhost:5173")
 BACKEND_ORIGIN = os.getenv("BACKEND_URL", "http://localhost:8000")
-EXAM_APP_DOWNLOAD_URL = os.getenv("EXAM_APP_DOWNLOAD_URL", f"{CLIENT_ORIGIN}/download-app")
 
 
 def notify_shortlisted_candidate(
@@ -27,11 +26,11 @@ def notify_shortlisted_candidate(
     username: str = "",
     assignment_datetime: str = "",
     duration_minutes: int = 60,
-    app_download_url: str = "",
+    **kwargs,
 ):
     """
     Sends congratulations, scheduled routine date/time, candidate username,
-    unique exam number, app download link, and exam security instructions.
+    unique exam number, and exam security instructions.
     """
     if not SMTP_ACCOUNT or not SMTP_CREDENTIAL:
         print("[SMTP NOTICE] Credentials missing in environment. Email bypassed.")
@@ -99,10 +98,10 @@ def notify_shortlisted_candidate(
         <!-- AI Assignment Notification Banner -->
         <div style="background: rgba(16, 185, 129, 0.08); border-left: 4px solid #10b981; border-radius: 0 8px 8px 0; padding: 14px 16px; margin: 22px 0;">
           <h4 style="color: #34d399; margin: 0 0 6px 0; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">
-            ✨ AI Coding Assessment Ready
+            ✨ AI Coding Assessment Ready (Google Chrome Only)
           </h4>
           <p style="color: #cbd5e1; font-size: 13px; line-height: 1.5; margin: 0;">
-            Your personalized technical assignment has been generated. You can complete the coding problems directly inside your web browser with real-time test execution and AI evaluation.
+            Your personalized technical assignment has been generated. This assessment must be completed exclusively inside <strong>Google Chrome</strong> browser with real-time test execution and AI evaluation. No download is required.
           </p>
         </div>
 
@@ -114,12 +113,12 @@ def notify_shortlisted_candidate(
           
           <div style="margin-bottom: 8px;">
             <a href="{assignment_web_link}" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 15px; display: inline-block; box-shadow: 0 4px 14px rgba(79, 70, 229, 0.45);">
-              🚀 Start Coding Assignment in Browser
+              🚀 Open Assignment in Google Chrome
             </a>
           </div>
 
           <p style="color: #94a3b8; font-size: 12px; margin: 12px 0 0 0; line-height: 1.5;">
-            Click above to open the online code editor, solve your technical challenges, test against public and hidden test cases, and submit your code.
+            Important: Open this link directly in Google Chrome. Solve your technical challenges with live test execution and automatic evaluation. No downloads required.
           </p>
         </div>
 
@@ -177,11 +176,11 @@ def notify_assignment_scheduled(
     unique_code: str = "",
     username: str = "",
     duration_minutes: int = 60,
-    app_download_url: str = "",
+    **kwargs,
 ) -> bool:
     """
     Sends scheduled assignment date, time routine, candidate username,
-    unique exam number, policy rules, and dedicated app download link.
+    unique exam number, and policy rules.
     """
     if not SMTP_ACCOUNT or not SMTP_CREDENTIAL:
         print("[SMTP NOTICE] Credentials missing in environment. Email bypassed.")
@@ -199,8 +198,9 @@ def notify_assignment_scheduled(
     policy_lines = [p.strip() for p in (assignment_policy or "").split("\n") if p.strip()]
     if not policy_lines:
         policy_lines = [
+            "Browser Requirement: Open and complete this examination exclusively in Google Chrome browser.",
             "Complete the technical assignment within the allotted duration.",
-            "Solve your coding challenges directly in our browser sandbox or submit your answers online.",
+            "Solve your coding challenges directly in Google Chrome (no software download required).",
             "Webcam and screen proctoring will be active throughout the interactive session.",
             "Unauthorized tab switching or background applications will disqualify your attempt.",
         ]
@@ -221,7 +221,7 @@ def notify_assignment_scheduled(
 
         <p style="font-size: 15px; color: #f3f4f6;">Dear <strong>{name}</strong>,</p>
         <p style="color: #9ca3af; font-size: 14px; line-height: 1.6;">
-          Your technical AI coding exam has been scheduled by the admissions board. Review your routine date/time and access credentials below:
+          Your technical AI coding exam has been scheduled by the admissions board. Review your routine date/time and access credentials below (Google Chrome browser is required):
         </p>
 
         <!-- Scheduled Routine & Credentials Card -->
@@ -257,11 +257,11 @@ def notify_assignment_scheduled(
           </p>
           <div style="margin-bottom: 8px;">
             <a href="{assignment_link}" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 15px; display: inline-block; box-shadow: 0 4px 14px rgba(79, 70, 229, 0.45);">
-              🚀 Start Coding Assignment in Browser
+              🚀 Open Assignment in Google Chrome
             </a>
           </div>
           <p style="color: #94a3b8; font-size: 12px; margin: 12px 0 0 0; line-height: 1.5;">
-            Click above at your scheduled time to access the online coding IDE, test cases runner, and automatic submission.
+            Click above at your scheduled time to access the online coding IDE in Google Chrome. No software download is required.
           </p>
         </div>
 

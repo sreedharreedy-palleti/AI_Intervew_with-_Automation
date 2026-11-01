@@ -1,5 +1,9 @@
 from typing import List, Optional, Any, Dict
 from pydantic import BaseModel
+from Assignment.schemas.access_schemas import (
+    VerifyExamAccessRequest,
+    VerifyExamAccessResponse,
+)
 
 
 class CodingQuestionOut(BaseModel):
@@ -30,26 +34,19 @@ class AssignmentDetailsResponse(BaseModel):
     score: Optional[float] = None
     ai_review: Optional[Dict[str, Any]] = None
     unique_code: Optional[str] = None
-    app_download_url: Optional[str] = None
-    download_url: Optional[str] = None
     is_app_required: bool = False
     locked: bool = False
     lock_message: Optional[str] = None
+    verification_completed: bool = False
+    termination_reason: Optional[str] = None
+    terminated_at: Optional[str] = None
+    proctor_logs: Optional[List[Dict[str, Any]]] = None
+    proctor_violation_history: Optional[List[Dict[str, Any]]] = None
 
 
-class VerifyExamAccessRequest(BaseModel):
-    username: str
-    unique_code: str
-    from_app: Optional[bool] = False
-
-
-class VerifyExamAccessResponse(BaseModel):
-    valid: bool
-    message: str
-    assignment_token: str
-    candidate_name: str
-    candidate_email: str
-    course_title: str
-    unique_code: str
-    duration_minutes: int = 60
-    app_download_url: Optional[str] = None
+__all__ = [
+    "CodingQuestionOut",
+    "AssignmentDetailsResponse",
+    "VerifyExamAccessRequest",
+    "VerifyExamAccessResponse",
+]

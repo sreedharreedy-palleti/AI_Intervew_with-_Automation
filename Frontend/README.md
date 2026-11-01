@@ -1,6 +1,6 @@
 # HirePulse AI — React Frontend Application
 
-HirePulse AI is an enterprise-grade AI Interview & Course Enrollment Platform built with **React**, **Vite**, and **FastAPI / MongoDB** on the backend. It features automated resume parsing, real-time ATS screening with Ollama (Llama 3), role-based access control (Candidates & Administrators), course rosters, and interactive assessment workflows.
+HirePulse AI is an enterprise-grade AI Interview & Course Enrollment Platform built with **React**, **Vite**, and **FastAPI / MongoDB** on the backend. It features automated resume parsing, real-time ATS screening with Gemini AI, role-based access control (Candidates & Administrators), course rosters, and interactive assessment workflows.
 
 ---
 

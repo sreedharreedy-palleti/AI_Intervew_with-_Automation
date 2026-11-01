@@ -1,0 +1,11 @@
+# Root .dockerignore
+node_modules/
+dist/
+**/__pycache__/
+**/*.py[cod]
+.git/
+.vscode/
+.idea/
+*.log
+scratch/
+

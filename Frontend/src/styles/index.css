@@ -162,3 +162,30 @@ input, textarea, select {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
+
+/* Dedicated Right-Side Graph Scroller */
+.graph-scrollbar-right {
+  scrollbar-width: thin;
+  scrollbar-color: #6366f1 rgba(255, 255, 255, 0.05);
+}
+
+.graph-scrollbar-right::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+.graph-scrollbar-right::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 999px;
+  margin: 3px 0;
+}
+
+.graph-scrollbar-right::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #6366f1 0%, #a855f7 100%);
+  border-radius: 999px;
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.5);
+}
+
+.graph-scrollbar-right::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #818cf8 0%, #c084fc 100%);
+}

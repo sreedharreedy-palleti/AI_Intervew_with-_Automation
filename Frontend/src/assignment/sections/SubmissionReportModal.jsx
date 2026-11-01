@@ -7,29 +7,45 @@ const SubmissionReportModal = ({
   submissionReport,
   assignment,
 }) => {
-  const isPassing = (submissionReport?.score ?? 0) >= 60;
+  const scoreVal = Math.round(submissionReport?.score ?? 0);
+  const isSelectedForInterview = scoreVal >= 50;
 
   return (
     <div className="assignment-container">
       <div className="results-modal-card">
-        <div className="score-hero-circle">
+        <div
+          className="score-hero-circle"
+          style={{
+            borderColor: isSelectedForInterview ? '#10b981' : '#f59e0b',
+            boxShadow: isSelectedForInterview ? '0 0 35px rgba(16, 185, 129, 0.35)' : 'none',
+          }}
+        >
           <span style={{ fontSize: '2.1rem', fontWeight: 800, color: '#f9fafb' }}>
-            {Math.round(submissionReport?.score ?? 0)}%
+            {scoreVal}%
           </span>
-          <span style={{ fontSize: '0.75rem', color: '#93c5fd', textTransform: 'uppercase', letterSpacing: '1px' }}>
+          <span style={{ fontSize: '0.75rem', color: isSelectedForInterview ? '#6ee7b7' : '#fcd34d', textTransform: 'uppercase', letterSpacing: '1px' }}>
             Score
           </span>
         </div>
 
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <Badge variant={isPassing ? 'success' : 'warning'} style={{ marginBottom: '0.75rem' }}>
-            {isPassing ? 'Technical Assessment Satisfied' : 'Review in Progress'}
+          <Badge
+            variant={isSelectedForInterview ? 'success' : 'warning'}
+            style={{ marginBottom: '0.75rem', fontSize: '0.82rem', padding: '0.35rem 0.8rem' }}
+          >
+            {isSelectedForInterview
+              ? '★ SELECTED FOR NEXT AI INTERVIEW PROCESS'
+              : 'ASSESSMENT COMPLETED (BELOW 50% THRESHOLD)'}
           </Badge>
           <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem' }}>
-            Assessment Evaluation Complete
+            {isSelectedForInterview
+              ? 'Congratulations! Selected for AI Interview'
+              : 'Assessment Evaluation Complete'}
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', maxWidth: '600px', margin: '0 auto' }}>
-            Candidate: <strong>{assignment?.candidate_name}</strong> • Course: <strong>{assignment?.course_title}</strong>
+            {isSelectedForInterview
+              ? `Your score of ${scoreVal}% passed the 50% cutoff! You have been selected for the next AI Interview round for ${assignment?.course_title || 'the course'}.`
+              : `Candidate: ${assignment?.candidate_name || 'Candidate'} • Course: ${assignment?.course_title || 'Technical Track'}`}
           </p>
         </div>
 
@@ -78,13 +94,13 @@ const SubmissionReportModal = ({
           </div>
         </div>
 
-        {/* AI Review from Ollama */}
+        {/* AI Review from Gemini */}
         {submissionReport.ai_review && (
           <div className="ai-review-box">
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
               <BrainCircuit size={20} color="#a855f7" />
               <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#f3f4f6' }}>
-                Ollama AI Code Review (Llama 3)
+                Gemini AI Code Review
               </h3>
               <span
                 style={{

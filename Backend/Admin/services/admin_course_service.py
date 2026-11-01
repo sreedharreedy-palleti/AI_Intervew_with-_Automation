@@ -146,8 +146,10 @@ async def service_update_enrollment_status(
     if payload.ats_score is not None:
         update_fields["enrolled_students.$.ats_score"] = payload.ats_score
 
+    candidate = next((s for s in doc.get("enrolled_students", []) if s.get("user_id") == user_id), None)
     if payload.application_status == "shortlisted":
-        update_fields["enrolled_students.$.assignment_token"] = str(uuid.uuid4())
+        if not candidate or not candidate.get("assignment_token"):
+            update_fields["enrolled_students.$.assignment_token"] = str(uuid.uuid4())
 
     await db["courses"].update_one(
         {"_id": ObjectId(course_id), "enrolled_students.user_id": user_id},
@@ -274,8 +276,6 @@ async def service_schedule_candidate_assignment(
     token = candidate.get("assignment_token") or str(uuid.uuid4())
     unique_code = candidate.get("unique_code") or f"EXAM-{random.randint(100000, 999999)}"
     now = datetime.now(timezone.utc)
-    backend_origin = os.getenv("BACKEND_URL", "http://localhost:8000")
-    app_download_url = f"{backend_origin}/api/v1/assignment/{token}/download"
 
     update_fields = {
         "enrolled_students.$.assignment_token": token,
@@ -301,7 +301,6 @@ async def service_schedule_candidate_assignment(
                 unique_code=unique_code,
                 username=candidate.get("email"),
                 duration_minutes=payload.duration_minutes or 60,
-                app_download_url=app_download_url,
             )
         except Exception as e:
             print(f"[SCHEDULE EMAIL ERROR] {e}")
@@ -309,6 +308,15 @@ async def service_schedule_candidate_assignment(
     await db["courses"].update_one(
         {"_id": ObjectId(course_id), "enrolled_students.user_id": user_id},
         {"$set": update_fields},
+    )
+
+    # Sync updated duration and schedule with assignments collection if already generated
+    await db["assignments"].update_one(
+        {"assignment_token": token},
+        {"$set": {
+            "duration_minutes": payload.duration_minutes,
+            "assignment_datetime": payload.assignment_datetime,
+        }}
     )
 
     return {
@@ -320,7 +328,6 @@ async def service_schedule_candidate_assignment(
         "unique_code": unique_code,
         "scheduled_datetime": payload.assignment_datetime,
         "duration_minutes": payload.duration_minutes,
-        "app_download_url": app_download_url,
         "policy": payload.assignment_policy,
         "email_dispatched": bool(email_sent),
     }
@@ -385,7 +392,6 @@ async def service_schedule_course_assignment_broadcast(
 
             if payload.send_email and student.get("email"):
                 student["assignment_email_sent_at"] = now
-                cand_download_url = f"{backend_origin}/api/v1/assignment/{token}/download"
                 try:
                     ok = notify_assignment_scheduled(
                         email=student["email"],
@@ -397,7 +403,6 @@ async def service_schedule_course_assignment_broadcast(
                         unique_code=unique_code,
                         username=student.get("email"),
                         duration_minutes=payload.duration_minutes or 60,
-                        app_download_url=cand_download_url,
                     )
                     if ok:
                         dispatched_count += 1
@@ -409,6 +414,19 @@ async def service_schedule_course_assignment_broadcast(
         {"_id": ObjectId(course_id)},
         {"$set": {"enrolled_students": students}}
     )
+
+    # Sync updated duration and schedule with assignments collection for all scheduled tokens
+    tokens_to_update = [
+        s.get("assignment_token") for s in students if s.get("assignment_token")
+    ]
+    if tokens_to_update:
+        await db["assignments"].update_many(
+            {"assignment_token": {"$in": tokens_to_update}},
+            {"$set": {
+                "duration_minutes": payload.duration_minutes,
+                "assignment_datetime": payload.assignment_datetime,
+            }}
+        )
 
     return {
         "message": f"Assignment scheduled for {scheduled_count} candidate(s)",

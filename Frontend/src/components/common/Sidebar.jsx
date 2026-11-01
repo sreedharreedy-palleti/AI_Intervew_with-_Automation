@@ -10,6 +10,7 @@ import {
   LogOut,
   ShieldAlert,
   UserCheck,
+  Bot,
 } from 'lucide-react';
 import Badge from './Badge';
 
@@ -42,6 +43,11 @@ const Sidebar = () => {
       to: '/admin/users',
       label: 'Candidate Management',
       icon: <Users size={18} />,
+    },
+    {
+      to: '/admin/ai-assistant',
+      label: 'AI Intelligence Bot',
+      icon: <Bot size={18} />,
     },
   ];
 

@@ -9,15 +9,20 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 # Imports pointing directly to your Resume_Analysis folder
 from Resume_Analysis.resume_parser import extract_resume_text
-from Resume_Analysis.ollama_client import run_ats_evaluation
+from Resume_Analysis.gemini_ats_client import run_ats_evaluation
 from Resume_Analysis.email_templates import notify_shortlisted_candidate, notify_rejected_candidate
+from Users.services.resume_storage_service import (
+    service_store_resume,
+    service_get_resume_file,
+)
 
-STORAGE_FOLDER = Path("uploads/resumes")
-STORAGE_FOLDER.mkdir(parents=True, exist_ok=True)
 VALID_FILE_TYPES = {".pdf", ".doc", ".docx"}
 
 # Concurrency lock set to prevent simultaneous submissions for the same user & course
 _active_enrollments = set()
+
+
+DEMO_TESTING_EMAILS = {"23091a32j4@rgmcet.edu.in"}
 
 
 def format_user_course(doc: dict, user_id: str, user_email: str = "") -> dict:
@@ -33,6 +38,8 @@ def format_user_course(doc: dict, user_id: str, user_email: str = "") -> dict:
         ),
         None
     )
+    is_demo = email_clean in DEMO_TESTING_EMAILS
+
     return {
         "id": str(doc["_id"]),
         "title": doc.get("title", ""),
@@ -47,6 +54,11 @@ def format_user_course(doc: dict, user_id: str, user_email: str = "") -> dict:
         "assignment_token": student_record.get("assignment_token") if student_record else None,
         "assignment_status": student_record.get("assignment_status") if student_record else None,
         "assignment_score": student_record.get("assignment_score") if student_record else None,
+        "assignment_datetime": student_record.get("assignment_datetime") if student_record else None,
+        "duration_minutes": student_record.get("duration_minutes", 60) if student_record else 60,
+        "interview_token": student_record.get("interview_token") if student_record else None,
+        "interview_status": student_record.get("interview_status") if student_record else None,
+        "is_demo_interview_access": is_demo,
     }
 
 
@@ -118,21 +130,17 @@ async def service_enroll_user_with_ai(
         if file_ext not in VALID_FILE_TYPES:
             raise HTTPException(status_code=400, detail="Only PDF and DOCX resume files are supported")
 
-        # 2. Read bytes and save to disk
+        # 2. Read bytes into memory (never saved to disk or code repository)
         file_bytes = await resume_file.read()
-        timestamp_slug = int(datetime.now(timezone.utc).timestamp())
-        saved_name = f"{user_id}_{timestamp_slug}_{resume_file.filename}"
-        file_dest = STORAGE_FOLDER / saved_name
+        if not file_bytes:
+            raise HTTPException(status_code=400, detail="Uploaded resume file is empty")
 
-        with open(file_dest, "wb") as disk_file:
-            disk_file.write(file_bytes)
-
-        # 3. Extract text using Resume_Analysis
+        # 3. Extract text from in-memory bytes using Resume_Analysis
         extracted_text = extract_resume_text(file_bytes, resume_file.filename)
         if not extracted_text:
             extracted_text = "No extractable text was found in the uploaded file."
 
-        # 4. Evaluate ATS match with Ollama / Gemini / Groq
+        # 4. Evaluate ATS match with Google Gemini API
         evaluation_result = await run_ats_evaluation(
             resume_text=extracted_text,
             course_title=course_doc.get("title", ""),
@@ -145,14 +153,35 @@ async def service_enroll_user_with_ai(
         assignment_token = str(uuid.uuid4()) if is_shortlisted else None
         unique_code = f"EXAM-{random.randint(100000, 999999)}" if is_shortlisted else None
 
-        # Scheduled routine date & time window
+        # Interview schedule is pending until assigned by Admin
         now_utc = datetime.now(timezone.utc)
-        assignment_datetime = (
-            f"{now_utc.strftime('%B %d, %Y %I:%M %p UTC')} (Assessment window active for 48 Hours)"
-            if is_shortlisted else None
-        )
+        assignment_datetime = None
 
-        # 5. Store record in MongoDB (including resume path, raw extracted text, unique exam code, and routine)
+        # 5. Store resume file bytes directly in MongoDB collection `resumes`
+        content_type = resume_file.content_type
+        if not content_type:
+            if file_ext == ".pdf":
+                content_type = "application/pdf"
+            elif file_ext in (".docx", ".doc"):
+                content_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            else:
+                content_type = "application/octet-stream"
+
+        stored_resume = await service_store_resume(
+            user_id=user_id,
+            course_id=course_id,
+            candidate_name=full_name,
+            candidate_email=current_user["email"],
+            filename=resume_file.filename,
+            file_bytes=file_bytes,
+            content_type=content_type,
+            extracted_text=extracted_text,
+            db=db,
+        )
+        resume_id = stored_resume["resume_id"]
+        resume_path = stored_resume["resume_path"]
+
+        # 6. Store candidate record in course's enrolled_students list
         record = {
             "user_id": user_id,
             "name": full_name,
@@ -160,13 +189,15 @@ async def service_enroll_user_with_ai(
             "dob": dob,
             "college": college,
             "year": year,
-            "resume_path": f"/uploads/resumes/{saved_name}",
+            "resume_id": resume_id,
+            "resume_path": resume_path,
             "resume_raw_text": extracted_text,
             "ats_score": ats_score,
             "application_status": status_label,
             "assignment_token": assignment_token,
             "unique_code": unique_code,
-            "assignment_datetime": assignment_datetime,
+            "assignment_datetime": None,
+            "duration_minutes": 60,
             "ai_analysis": evaluation_result,
             "enrolled_at": now_utc,
         }
@@ -190,10 +221,7 @@ async def service_enroll_user_with_ai(
                 detail="You are already enrolled in this course track. Re-enrollment is not allowed."
             )
 
-        backend_origin = os.getenv("BACKEND_URL", "http://localhost:8000")
-        app_download_url = f"{backend_origin}/api/v1/assignment/{assignment_token}/download"
-
-        # 6. Dispatch email in background
+        # 7. Dispatch email in background
         if is_shortlisted:
             background_tasks.add_task(
                 notify_shortlisted_candidate,
@@ -206,7 +234,6 @@ async def service_enroll_user_with_ai(
                 username=current_user["email"],
                 assignment_datetime=assignment_datetime,
                 duration_minutes=60,
-                app_download_url=app_download_url,
             )
         else:
             background_tasks.add_task(
@@ -217,19 +244,19 @@ async def service_enroll_user_with_ai(
                 ats_score=ats_score
             )
 
-        link = f"http://localhost:5173/assignment/{assignment_token}" if is_shortlisted else None
+        # Do not provide direct start link on enrollment; interview must be scheduled by Admin
+        link = None
 
         return {
-            "message": "Application analyzed and shortlisted!" if is_shortlisted else "Application processed. ATS score was below the 70% threshold.",
+            "message": "Application analyzed and shortlisted! Waiting for Admin to schedule your interview date and time." if is_shortlisted else "Application processed. ATS score was below the 70% threshold.",
             "course_id": course_id,
             "full_name": full_name,
             "ats_score": ats_score,
             "status": status_label,
-            "assignment_link": link,
+            "assignment_link": None,
             "username": current_user["email"] if is_shortlisted else None,
             "unique_code": unique_code,
-            "assignment_datetime": assignment_datetime,
-            "app_download_url": app_download_url if is_shortlisted else None,
+            "assignment_datetime": None,
             "is_app_required": False,
             "strengths": evaluation_result.get("strengths", []),
             "missing_skills": evaluation_result.get("missing_skills", []),
@@ -237,4 +264,4 @@ async def service_enroll_user_with_ai(
 
     finally:
         _active_enrollments.discard(lock_key)
-        _active_enrollments.discard(email_lock_key)
+        _active_enrollments.discard(email_lock_key)

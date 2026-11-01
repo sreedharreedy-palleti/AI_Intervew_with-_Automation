@@ -16,13 +16,15 @@ import CodeEditorPanel from '../sections/CodeEditorPanel';
 import ConsoleRunner from '../sections/ConsoleRunner';
 import SecurityLockModal from '../sections/SecurityLockModal';
 import SubmissionReportModal from '../sections/SubmissionReportModal';
-import SubmitConfirmModal from '../sections/SubmitConfirmModal';
+import ChromeRequiredCard from '../../components/common/ChromeRequiredCard';
+import { checkIsGoogleChrome } from '../../utils/browserCheck';
 
 import '../styles/AssignmentView.css';
 
 const AssignmentView = () => {
   const { assignmentToken } = useParams();
   const toast = useToast();
+  const [browserState, setBrowserState] = useState(() => checkIsGoogleChrome());
 
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
@@ -273,10 +275,20 @@ const AssignmentView = () => {
     }
   };
 
+  // BROWSER RESTRICTION: GOOGLE CHROME ONLY
+  if (!browserState.isChrome) {
+    return (
+      <ChromeRequiredCard
+        currentBrowser={browserState.currentBrowser}
+        onRecheck={() => setBrowserState(checkIsGoogleChrome())}
+      />
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="page-wrapper" style={{ display: 'grid', placeItems: 'center', minHeight: '60vh' }}>
-        <Loader text="AI Engine is synthesizing your personalized technical assessment using Ollama (Llama 3)..." />
+        <Loader text="AI Engine is synthesizing your personalized technical assessment using Gemini AI..." />
       </div>
     );
   }

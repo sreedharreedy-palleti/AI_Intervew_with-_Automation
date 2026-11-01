@@ -1,23 +1,29 @@
-from pathlib import Path
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
+from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from database import connect_to_mongo, close_mongo_connection
+from database import connect_to_mongo, close_mongo_connection, get_database
 from auth.routes import auth_router
 from Admin.routes import admin_router
 from Users.routes import users_router
 from Assignment.routes import assignment_router
-
-# Ensure uploads directory exists on launch
-UPLOAD_DIR = Path("uploads/resumes")
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+from Intervew.routes import interview_router
+from Chatbot.routes import chatbot_router
+from Users.services.resume_storage_service import (
+    migrate_disk_resumes_to_mongo,
+    service_get_resume_file,
+)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await connect_to_mongo()
+    db = get_database()
+    try:
+        await migrate_disk_resumes_to_mongo(db)
+    except Exception as exc:
+        print(f"[STARTUP NOTICE] Resume migration check: {exc}")
     yield
     await close_mongo_connection()
 
@@ -32,14 +38,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serve uploaded resumes statically (e.g., http://localhost:8000/uploads/resumes/...)
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
-
 # Mount routes
 app.include_router(auth_router, prefix="/api/v1/auth")
 app.include_router(admin_router, prefix="/api/v1/admin")
 app.include_router(users_router, prefix="/api/v1/user")
 app.include_router(assignment_router, prefix="/api/v1/assignment")
+app.include_router(interview_router, prefix="/api/v1/interview")
+app.include_router(chatbot_router, prefix="/api/v1/chatbot")
+
+
+# Backward-compatible route for any legacy resume URLs stored in DB
+@app.get("/uploads/resumes/{filename:path}", tags=["Resumes"])
+async def get_legacy_uploaded_resume(
+    filename: str,
+    db: AsyncIOMotorDatabase = Depends(get_database),
+):
+    """
+    Streams legacy candidate resume directly from MongoDB without requiring disk files.
+    """
+    return await service_get_resume_file(filename, db)
 
 
 @app.get("/", tags=["Health"])

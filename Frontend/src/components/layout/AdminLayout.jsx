@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import Sidebar from '../common/Sidebar';
 import { Bell, Sparkles } from 'lucide-react';
+import ChatbotWidget from '../../chatbot/ChatbotWidget';
 
 const AdminLayout = () => {
   const location = useLocation();
@@ -10,6 +11,7 @@ const AdminLayout = () => {
     if (location.pathname.includes('/admin/enrollments')) return 'Course Enrollments & Shortlisting';
     if (location.pathname.includes('/admin/courses')) return 'Course & Roster Management';
     if (location.pathname.includes('/admin/users')) return 'Candidate & User Administration';
+    if (location.pathname.includes('/admin/ai-assistant')) return 'AI Intelligence Assistant';
     return 'Executive Admin Dashboard';
   };
 
@@ -96,6 +98,9 @@ const AdminLayout = () => {
         <main style={{ flex: 1, padding: '2rem', minWidth: 0 }}>
           <Outlet />
         </main>
+
+        {/* HirePulse Platform AI Chatbot Widget */}
+        <ChatbotWidget />
       </div>
     </div>
   );

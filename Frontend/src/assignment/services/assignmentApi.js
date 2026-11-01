@@ -31,14 +31,6 @@ export const assignmentApi = {
   },
 
   /**
-   * Fetches official Exam App download details and instructions.
-   */
-  getAppDownloadInfo: async () => {
-    const response = await apiClient.get('/api/v1/assignment/app/download');
-    return response.data;
-  },
-
-  /**
    * Executes the candidate's code against public test cases and hidden test cases.
    */
   runTests: async (token, { questionId, code, language = 'python' }) => {
@@ -65,6 +57,30 @@ export const assignmentApi = {
    */
   getResults: async (token) => {
     const response = await apiClient.get(`/api/v1/assignment/${token}/results`);
+    return response.data;
+  },
+
+  /**
+   * Submits webcam snapshot, screen status, and audio signals for live AI proctoring analysis.
+   */
+  analyzeProctorFrame: async (token, payload) => {
+    const response = await apiClient.post(`/api/v1/assignment/${token}/proctor/analyze-frame`, payload);
+    return response.data;
+  },
+
+  /**
+   * Immediately terminates and locks exam due to proctoring violation.
+   */
+  terminateExam: async (token, payload) => {
+    const response = await apiClient.post(`/api/v1/assignment/${token}/proctor/terminate`, payload);
+    return response.data;
+  },
+
+  /**
+   * Persists pre-exam candidate face capture & audio verification to MongoDB.
+   */
+  verifyPrecheck: async (token, payload) => {
+    const response = await apiClient.post(`/api/v1/assignment/${token}/proctor/verify-precheck`, payload);
     return response.data;
   },
 };

@@ -20,6 +20,7 @@ import {
   Award,
   AlertCircle,
   LogIn,
+  Clock,
 } from 'lucide-react';
 
 const CourseEnrollModal = ({ isOpen, onClose, course, onEnrollSuccess }) => {
@@ -247,29 +248,54 @@ const CourseEnrollModal = ({ isOpen, onClose, course, onEnrollSuccess }) => {
             </div>
           )}
 
+          {/* Interview Scheduling Notice: Admin will assign interview date & time */}
+          <div
+            style={{
+              marginTop: '1.25rem',
+              padding: '1.1rem 1.25rem',
+              background: 'rgba(56, 189, 248, 0.08)',
+              border: '1px solid rgba(56, 189, 248, 0.35)',
+              borderRadius: 'var(--radius-md)',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '12px',
+            }}
+          >
+            <Clock size={22} color="#38bdf8" style={{ flexShrink: 0, marginTop: '2px' }} />
+            <div>
+              <div style={{ fontWeight: 700, color: '#f0f9ff', fontSize: '0.92rem', marginBottom: '4px' }}>
+                Technical Interview Scheduling Pending
+              </div>
+              <p style={{ margin: 0, fontSize: '0.82rem', color: '#cbd5e1', lineHeight: 1.55 }}>
+                Your resume has been analyzed and shortlisted! The admissions administrator will review your profile and schedule your official interview date, time slot, and duration. You will receive an email routine once your slot is assigned.
+              </p>
+            </div>
+          </div>
+
           {/* Action Buttons */}
           <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>
-            <Button variant="secondary" onClick={handleReset} style={{ flex: 1 }}>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                handleReset();
+                onClose();
+              }}
+              style={{ flex: 1 }}
+            >
               Close
             </Button>
-
-            {result.assignment_link && (
-              <Button
-                variant="primary"
-                style={{
-                  flex: 1.5,
-                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                }}
-                onClick={() => {
-                  const token = result.assignment_link.split('/').pop();
-                  navigate(`/assignment/${token}`);
-                  onClose();
-                }}
-                icon={<ArrowRight size={18} />}
-              >
-                Start AI Interview
-              </Button>
-            )}
+            <Button
+              variant="primary"
+              onClick={() => {
+                handleReset();
+                onClose();
+                navigate('/my-courses');
+              }}
+              style={{ flex: 1.5 }}
+              icon={<ArrowRight size={16} />}
+            >
+              View My Applications
+            </Button>
           </div>
         </div>
       ) : (
@@ -374,7 +400,7 @@ const CourseEnrollModal = ({ isOpen, onClose, course, onEnrollSuccess }) => {
             >
               <Sparkles size={20} color="#818cf8" />
               <div style={{ fontSize: '0.82rem', color: '#c7d2fe' }}>
-                Your resume will be parsed and evaluated using Ollama AI against{' '}
+                Your resume will be parsed and evaluated using Gemini AI against{' '}
                 <strong>{course.title}</strong> prerequisites.
               </div>
             </div>
