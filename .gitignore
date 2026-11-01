@@ -13,13 +13,6 @@ __pycache__/
 *.so
 .pytest_cache/
 
-# Environment & Sensitive Files
-.env
-.env.*
-!.env.example
-k8s/secrets.yaml
-!k8s/secrets.yaml.example
-
 # OS & Editor
 .DS_Store
 Thumbs.db
@@ -35,8 +28,4 @@ tmp/
 scratch/
 
 
-Backend/.env
-.env
 
-Backend/.env
-.env
