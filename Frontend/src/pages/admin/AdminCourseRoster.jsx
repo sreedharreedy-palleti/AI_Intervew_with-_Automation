@@ -6,6 +6,7 @@ import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
+import Input from '../../components/common/Input';
 import Loader from '../../components/common/Loader';
 import {
   ArrowLeft,
@@ -22,6 +23,7 @@ import {
   Sparkles,
   Award,
   Trash2,
+  Edit2,
   Mail,
   Send,
 } from 'lucide-react';
@@ -34,6 +36,61 @@ const AdminCourseRoster = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [actionLoadingId, setActionLoadingId] = useState(null);
+
+  // Edit Candidate Modal State (Full CRUD to Database)
+  const [editingStudent, setEditingStudent] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    email: '',
+    college: '',
+    year: '2025',
+    ats_score: 75,
+    application_status: 'shortlisted',
+    unique_code: '',
+  });
+  const [editLoading, setEditLoading] = useState(false);
+
+  const openEditModal = (student) => {
+    setEditingStudent(student);
+    setEditFormData({
+      name: student.name || '',
+      email: student.email || '',
+      college: student.college || '',
+      year: student.year || '2025',
+      ats_score: student.ats_score != null ? student.ats_score : (student.application_status === 'shortlisted' ? 75 : 50),
+      application_status: student.application_status || 'shortlisted',
+      unique_code: student.unique_code || '',
+    });
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    if (!editingStudent) return;
+
+    setEditLoading(true);
+    try {
+      await adminApi.updateEnrollmentStatus(
+        courseId,
+        editingStudent.user_id,
+        {
+          name: editFormData.name,
+          email: editFormData.email,
+          college: editFormData.college,
+          year: editFormData.year,
+          ats_score: Number(editFormData.ats_score),
+          application_status: editFormData.application_status,
+          unique_code: editFormData.unique_code,
+        }
+      );
+      toast.success(`Candidate "${editFormData.name}" updated in database successfully!`);
+      setEditingStudent(null);
+      await fetchRoster();
+    } catch (err) {
+      toast.error(err.message || 'Failed to update candidate');
+    } finally {
+      setEditLoading(false);
+    }
+  };
 
   // Schedule Modal State
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
@@ -642,6 +699,20 @@ const AdminCourseRoster = () => {
                           )}
 
                           <button
+                            onClick={() => openEditModal(student)}
+                            className="btn btn-secondary btn-sm"
+                            style={{
+                              color: '#38bdf8',
+                              borderColor: 'rgba(56, 189, 248, 0.3)',
+                              fontSize: '0.75rem',
+                              padding: '0.3rem 0.55rem',
+                            }}
+                            title="Edit candidate details in database"
+                          >
+                            <Edit2 size={13} />
+                          </button>
+
+                          <button
                             onClick={() => handleDeleteEnrollment(student.user_id, student.name)}
                             disabled={isBusy}
                             className="btn btn-secondary btn-sm"
@@ -834,6 +905,109 @@ const AdminCourseRoster = () => {
           </form>
         </Modal>
       )}
+      {/* Edit Candidate Modal (Full CRUD to Database) */}
+      {editingStudent && (
+        <Modal
+          isOpen={!!editingStudent}
+          onClose={() => setEditingStudent(null)}
+          title={`Edit Candidate: ${editingStudent.name}`}
+        >
+          <form onSubmit={handleEditSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', margin: 0 }}>
+              Course: <strong style={{ color: '#fff' }}>{rosterData?.course_title}</strong>
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+              <Input
+                id="editName"
+                label="Candidate Full Name *"
+                value={editFormData.name}
+                onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                required
+              />
+              <Input
+                id="editEmail"
+                type="email"
+                label="Email Address *"
+                value={editFormData.email}
+                onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                required
+              />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+              <Input
+                id="editCollege"
+                label="College / Institute"
+                value={editFormData.college}
+                onChange={(e) => setEditFormData({ ...editFormData, college: e.target.value })}
+                placeholder="e.g. Stanford University"
+              />
+              <Input
+                id="editYear"
+                label="Graduation Year"
+                value={editFormData.year}
+                onChange={(e) => setEditFormData({ ...editFormData, year: e.target.value })}
+                placeholder="e.g. 2025"
+              />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.4rem' }}>
+                  Application Status *
+                </label>
+                <select
+                  value={editFormData.application_status}
+                  onChange={(e) => setEditFormData({ ...editFormData, application_status: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '0.65rem 0.85rem',
+                    background: 'var(--bg-surface-elevated)',
+                    border: '1px solid var(--border-medium)',
+                    borderRadius: 'var(--radius-md)',
+                    color: '#fff',
+                    fontSize: '0.9rem',
+                  }}
+                >
+                  <option value="shortlisted">Shortlisted (Passed threshold)</option>
+                  <option value="rejected">Not Shortlisted (Rejected)</option>
+                  <option value="pending">Under Review / Pending</option>
+                </select>
+              </div>
+
+              <Input
+                id="editAtsScore"
+                type="number"
+                label="ATS Match Score (%) *"
+                value={editFormData.ats_score}
+                onChange={(e) => setEditFormData({ ...editFormData, ats_score: e.target.value })}
+                min="0"
+                max="100"
+                required
+              />
+            </div>
+
+            <Input
+              id="editUniqueCode"
+              label="Unique Exam Code"
+              value={editFormData.unique_code}
+              onChange={(e) => setEditFormData({ ...editFormData, unique_code: e.target.value })}
+              placeholder="e.g. EXAM-482910"
+            />
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+              <Button type="button" variant="secondary" onClick={() => setEditingStudent(null)}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary" isLoading={editLoading}>
+                Save Changes to Database
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
     </div>
   );
 };

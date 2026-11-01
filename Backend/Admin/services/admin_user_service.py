@@ -158,4 +158,9 @@ async def service_delete_user_by_admin(user_id: str, db: AsyncIOMotorDatabase) -
         {"$pull": {"enrolled_students": {"user_id": user_id}}}
     )
 
-    return {"message": "User deleted and unenrolled from all courses successfully."}
+    # Cascade clean up assignments, interviews, and resume entries
+    await db["assignments"].delete_many({"user_id": user_id})
+    await db["interviews"].delete_many({"user_id": user_id})
+    await db["resumes"].delete_many({"user_id": user_id})
+
+    return {"message": "User deleted and unenrolled from all courses and assessments successfully."}

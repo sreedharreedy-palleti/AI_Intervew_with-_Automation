@@ -44,11 +44,17 @@ export const adminApi = {
   },
 
   // --- Enrollment & Shortlist CRUD Operations ---
-  updateEnrollmentStatus: async (courseId, userId, application_status, ats_score = null) => {
-    const res = await apiClient.put(API_ROUTES.ADMIN_ENROLLMENT_STATUS(courseId, userId), {
-      application_status,
-      ...(ats_score !== null ? { ats_score: Number(ats_score) } : {}),
-    });
+  updateEnrollmentStatus: async (courseId, userId, payloadOrStatus, ats_score = null) => {
+    let payload = {};
+    if (typeof payloadOrStatus === 'object' && payloadOrStatus !== null) {
+      payload = payloadOrStatus;
+    } else {
+      payload = {
+        application_status: payloadOrStatus,
+        ...(ats_score !== null ? { ats_score: Number(ats_score) } : {}),
+      };
+    }
+    const res = await apiClient.put(API_ROUTES.ADMIN_ENROLLMENT_STATUS(courseId, userId), payload);
     return res.data;
   },
 

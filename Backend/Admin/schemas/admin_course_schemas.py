@@ -61,8 +61,16 @@ class CourseUpdate(BaseModel):
 
 
 class EnrollmentStatusUpdate(BaseModel):
-    application_status: str
+    application_status: Optional[str] = None
     ats_score: Optional[int] = Field(None, ge=0, le=100)
+    name: Optional[str] = None
+    email: Optional[str] = None
+    dob: Optional[str] = None
+    college: Optional[str] = None
+    year: Optional[str] = None
+    unique_code: Optional[str] = None
+    assignment_datetime: Optional[str] = None
+    duration_minutes: Optional[int] = None
 
 
 class AdminManualEnroll(BaseModel):

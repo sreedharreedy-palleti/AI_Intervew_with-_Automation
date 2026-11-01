@@ -131,36 +131,97 @@ async def service_update_enrollment_status(
     if not ObjectId.is_valid(course_id):
         raise HTTPException(status_code=400, detail="Invalid course ID format")
 
+    # Search candidate by user_id or email
     doc = await db["courses"].find_one({
         "_id": ObjectId(course_id),
-        "enrolled_students.user_id": user_id,
+        "$or": [
+            {"enrolled_students.user_id": user_id},
+            {"enrolled_students.email": user_id}
+        ]
     })
     if not doc:
         raise HTTPException(status_code=404, detail="Enrollment record not found for this candidate")
 
-    update_fields = {
-        "enrolled_students.$.application_status": payload.application_status,
-        "enrolled_students.$.updated_at": datetime.now(timezone.utc),
-    }
+    candidate = next(
+        (s for s in doc.get("enrolled_students", []) if s.get("user_id") == user_id or s.get("email") == user_id),
+        None
+    )
+    if not candidate:
+        raise HTTPException(status_code=404, detail="Candidate record not found in roster")
+
+    actual_user_id = candidate.get("user_id") or user_id
+    update_fields = {"enrolled_students.$.updated_at": datetime.now(timezone.utc)}
+
+    if payload.application_status is not None:
+        update_fields["enrolled_students.$.application_status"] = payload.application_status
+        if payload.application_status == "shortlisted":
+            if not candidate.get("assignment_token"):
+                update_fields["enrolled_students.$.assignment_token"] = str(uuid.uuid4())
+            if not candidate.get("unique_code"):
+                update_fields["enrolled_students.$.unique_code"] = f"EXAM-{random.randint(100000, 999999)}"
 
     if payload.ats_score is not None:
         update_fields["enrolled_students.$.ats_score"] = payload.ats_score
-
-    candidate = next((s for s in doc.get("enrolled_students", []) if s.get("user_id") == user_id), None)
-    if payload.application_status == "shortlisted":
-        if not candidate or not candidate.get("assignment_token"):
-            update_fields["enrolled_students.$.assignment_token"] = str(uuid.uuid4())
+    if payload.name is not None and payload.name.strip():
+        update_fields["enrolled_students.$.name"] = payload.name.strip()
+    if payload.email is not None and payload.email.strip():
+        update_fields["enrolled_students.$.email"] = payload.email.strip().lower()
+    if payload.college is not None:
+        update_fields["enrolled_students.$.college"] = payload.college.strip()
+    if payload.year is not None:
+        update_fields["enrolled_students.$.year"] = str(payload.year).strip()
+    if payload.dob is not None:
+        update_fields["enrolled_students.$.dob"] = payload.dob.strip()
+    if payload.unique_code is not None:
+        update_fields["enrolled_students.$.unique_code"] = payload.unique_code.strip()
+    if payload.assignment_datetime is not None:
+        update_fields["enrolled_students.$.assignment_datetime"] = payload.assignment_datetime
+    if payload.duration_minutes is not None:
+        update_fields["enrolled_students.$.duration_minutes"] = int(payload.duration_minutes)
 
     await db["courses"].update_one(
-        {"_id": ObjectId(course_id), "enrolled_students.user_id": user_id},
+        {
+            "_id": ObjectId(course_id),
+            "$or": [
+                {"enrolled_students.user_id": actual_user_id},
+                {"enrolled_students.email": candidate.get("email")}
+            ]
+        },
         {"$set": update_fields}
     )
 
+    # Sync name and email with users collection if registered
+    candidate_email = (payload.email or candidate.get("email") or "").strip().lower()
+    if payload.name or payload.email:
+        user_sync = {}
+        if payload.name:
+            user_sync["name"] = payload.name.strip()
+        if payload.email:
+            user_sync["email"] = candidate_email
+        if user_sync and ObjectId.is_valid(actual_user_id):
+            await db["users"].update_one({"_id": ObjectId(actual_user_id)}, {"$set": user_sync})
+
+    # Sync with assignments collection if present
+    assign_sync = {}
+    if payload.name:
+        assign_sync["candidate_name"] = payload.name.strip()
+    if payload.email:
+        assign_sync["candidate_email"] = candidate_email
+    if payload.assignment_datetime:
+        assign_sync["scheduled_at"] = payload.assignment_datetime
+    if payload.duration_minutes:
+        assign_sync["duration_minutes"] = int(payload.duration_minutes)
+    if assign_sync:
+        await db["assignments"].update_many(
+            {"course_id": course_id, "$or": [{"user_id": actual_user_id}, {"candidate_email": candidate.get("email")}]},
+            {"$set": assign_sync}
+        )
+
     return {
-        "message": f"Candidate status updated to {payload.application_status}",
+        "message": "Candidate enrollment record updated in database successfully",
         "course_id": course_id,
-        "user_id": user_id,
-        "application_status": payload.application_status,
+        "user_id": actual_user_id,
+        "application_status": payload.application_status or candidate.get("application_status"),
     }
 
 async def service_delete_enrollment(course_id: str, user_id: str, db: AsyncIOMotorDatabase) -> dict:
@@ -169,15 +230,19 @@ async def service_delete_enrollment(course_id: str, user_id: str, db: AsyncIOMot
 
     result = await db["courses"].update_one(
         {"_id": ObjectId(course_id)},
-        {"$pull": {"enrolled_students": {"user_id": user_id}}}
+        {"$pull": {"enrolled_students": {"$or": [{"user_id": user_id}, {"email": user_id}]}}}
     )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Course not found")
-    if result.modified_count == 0:
-        raise HTTPException(status_code=404, detail="Candidate was not enrolled in this course")
+
+    # Cascade delete assignments for this candidate in this course
+    await db["assignments"].delete_many({
+        "course_id": course_id,
+        "$or": [{"user_id": user_id}, {"candidate_email": user_id}]
+    })
 
     return {
-        "message": "Candidate enrollment deleted successfully",
+        "message": "Candidate enrollment and related assessment records deleted successfully",
         "course_id": course_id,
         "user_id": user_id,
     }
@@ -247,7 +312,12 @@ async def service_delete_course(course_id: str, db: AsyncIOMotorDatabase) -> dic
     result = await db["courses"].delete_one({"_id": ObjectId(course_id)})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Course not found")
-    return {"message": "Course deleted successfully"}
+
+    # Cascade clean up assignments and interviews for this course
+    await db["assignments"].delete_many({"course_id": course_id})
+    await db["interviews"].delete_many({"course_id": course_id})
+
+    return {"message": "Course and all associated rosters/assignments deleted successfully from database"}
 
 
 async def service_schedule_candidate_assignment(
