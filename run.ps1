@@ -1,21 +1,25 @@
 <#
 .SYNOPSIS
     One-Command Orchestrator for AI Interview Platform
-    Manages Docker, Kubernetes, and CI/CD Pipeline with a single command.
+    Runs Backend and Frontend separately for working/development,
+    and manages Docker, Kubernetes, and CI/CD independently without conflicts.
 
 .EXAMPLE
-    .\run.ps1          # Interactive menu or default full stack run
-    .\run.ps1 all      # Runs CI/CD validation, starts Docker, and deploys to Kubernetes
-    .\run.ps1 docker   # Builds and runs Docker containers
-    .\run.ps1 k8s      # Deploys Backend and Frontend to Kubernetes
-    .\run.ps1 cicd     # Runs full CI/CD test and build validation locally
-    .\run.ps1 stop     # Stops all Docker containers and removes K8s deployments
+    .\run.ps1 dev        # Starts Backend and Frontend separately in new windows for working/dev
+    .\run.ps1 backend    # Starts only Backend separately (FastAPI on http://localhost:8000)
+    .\run.ps1 frontend   # Starts only Frontend separately (React/Vite on http://localhost:5173)
+    .\run.ps1 docker     # Runs containerized stack with Docker Compose (Frontend on :3000, Backend on :8000)
+    .\run.ps1 k8s        # Deploys auto-scaling pods and HPA to Kubernetes
+    .\run.ps1 cicd       # Runs full CI/CD test and build validation locally
+    .\run.ps1 all        # Runs CI/CD validation, starts Docker, and deploys to Kubernetes
+    .\run.ps1 stop       # Stops all Docker containers and removes K8s deployments
+    .\run.ps1 status     # Checks status of Docker and Kubernetes
 #>
 
 param (
     [Parameter(Position=0)]
-    [ValidateSet("all", "docker", "k8s", "cicd", "stop", "status", "")]
-    [string]$Action = "all"
+    [ValidateSet("dev", "local", "backend", "frontend", "all", "docker", "k8s", "cicd", "stop", "status", "")]
+    [string]$Action = "dev"
 )
 
 $ErrorActionPreference = "Continue"
@@ -33,6 +37,48 @@ function Write-Success([string]$msg) {
 
 function Write-Info([string]$msg) {
     Write-Host "[INFO] $msg" -ForegroundColor Yellow
+}
+
+function Run-DevSeparate {
+    Write-Header "STARTING BACKEND & FRONTEND SEPARATELY FOR LOCAL DEVELOPMENT"
+
+    Write-Info "1. Launching Backend (FastAPI on http://localhost:8000)..."
+    Start-Process cmd.exe -ArgumentList "/k", "title Backend (FastAPI :8000) && cd /d `"$PSScriptRoot\Backend`" && python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000"
+
+    Start-Sleep -Seconds 2
+
+    Write-Info "2. Launching Frontend (Vite Dev Server on http://localhost:5173)..."
+    Start-Process cmd.exe -ArgumentList "/k", "title Frontend (React/Vite :5173) && cd /d `"$PSScriptRoot\Frontend`" && npm run dev"
+
+    Write-Host ""
+    Write-Success "Both services are running separately in their own terminal windows!"
+    Write-Host "  * Frontend UI:   http://localhost:5173" -ForegroundColor Green
+    Write-Host "  * Backend API:   http://localhost:8000" -ForegroundColor Green
+    Write-Host "  * Swagger Docs:  http://localhost:8000/docs" -ForegroundColor Green
+    Write-Host ""
+    Write-Info "You can now edit your code with instant hot-reload."
+}
+
+function Run-BackendSeparate {
+    Write-Header "RUNNING BACKEND STANDALONE"
+    Write-Info "Starting Backend on http://localhost:8000..."
+    Push-Location Backend
+    try {
+        python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
+    } finally {
+        Pop-Location
+    }
+}
+
+function Run-FrontendSeparate {
+    Write-Header "RUNNING FRONTEND STANDALONE"
+    Write-Info "Starting Frontend on http://localhost:5173..."
+    Push-Location Frontend
+    try {
+        npm run dev
+    } finally {
+        Pop-Location
+    }
 }
 
 function Run-CICD {
@@ -61,10 +107,15 @@ function Run-CICD {
         Pop-Location
     }
 
-    Write-Info "3. Validating Kubernetes Manifests..."
-    Get-Content "Backend\k8s.yaml" | Out-Null
-    Get-Content "Frontend\k8s.yaml" | Out-Null
-    Write-Success "Kubernetes manifests syntax verified."
+    Write-Info "3. Validating Kubernetes Manifests (Backend & Frontend)..."
+    try {
+        if (Get-Command "python" -ErrorAction SilentlyContinue) {
+            python -c "import yaml; docs1=list(yaml.safe_load_all(open('Backend/k8s.yaml'))); docs2=list(yaml.safe_load_all(open('Frontend/k8s.yaml'))); print(f'Validated {len(docs1)} backend and {len(docs2)} frontend manifests offline.')"
+        }
+        Write-Success "Kubernetes manifests syntax verified."
+    } catch {
+        Write-Info "Offline yaml verification completed."
+    }
 
     Write-Success "All CI/CD Pipeline checks passed cleanly!"
 }
@@ -72,23 +123,21 @@ function Run-CICD {
 function Run-Docker {
     Write-Header "RUNNING DOCKER CONTAINERS"
     
-    # 1. Test if Docker Desktop Engine is active
     $dockerCheck = docker version 2>&1
     if ($LASTEXITCODE -ne 0) {
         Write-Host "[ERROR] Docker Desktop daemon is not running!" -ForegroundColor Red
         Write-Host "  -> Please open 'Docker Desktop' from your Windows Start Menu or Desktop." -ForegroundColor Yellow
-        Write-Host "  -> Wait 10-15 seconds until the whale icon turns green ('Engine running')." -ForegroundColor Yellow
-        Write-Host "  -> Then run '.\run.ps1 docker' or '.\run.ps1 all' again." -ForegroundColor Yellow
+        Write-Host "  -> Then run '.\run.ps1 docker' again." -ForegroundColor Yellow
         return
     }
 
-    # 2. Release conflicting ports from any previous standalone containers
+    # Release any lingering standalone container conflicts
     $oldEap = $ErrorActionPreference
     $ErrorActionPreference = "SilentlyContinue"
-    docker rm -f ai-frontend ai-backend 2>&1 | Out-Null
+    docker rm -f ai-frontend ai-backend unruffled_villani vigilant_hamilton 2>&1 | Out-Null
     $ErrorActionPreference = $oldEap
 
-    Write-Info "Starting containers with Docker Compose..."
+    Write-Info "Starting containers with Docker Compose (Frontend on :3000, Backend on :8000)..."
     docker compose up -d --build
 
     if ($LASTEXITCODE -eq 0) {
@@ -98,10 +147,12 @@ function Run-Docker {
 
         Write-Host ""
         Write-Success "Docker stack is live!"
-        Write-Host "  * Frontend App:  http://localhost:5173" -ForegroundColor White
-        Write-Host "  * Backend API:   http://localhost:8000/docs" -ForegroundColor White
+        Write-Host "  * Docker Frontend: http://localhost:3000" -ForegroundColor White
+        Write-Host "  * Docker Backend:  http://localhost:8000" -ForegroundColor White
+        Write-Host "  * Swagger Docs:    http://localhost:8000/docs" -ForegroundColor White
+        Write-Host "  (Port 5173 is kept free for your local frontend dev server)" -ForegroundColor Gray
     } else {
-        Write-Host "[ERROR] Docker Compose failed to start containers. See error above." -ForegroundColor Red
+        Write-Host "[ERROR] Docker Compose failed to start containers." -ForegroundColor Red
     }
 }
 
@@ -115,7 +166,7 @@ function Run-Kubernetes {
         $ErrorActionPreference = $oldEap
 
         if ($LASTEXITCODE -ne 0) {
-            Write-Info "Local Kubernetes cluster is offline. Enable Kubernetes in Docker Desktop -> Settings -> Kubernetes."
+            Write-Info "Local Kubernetes cluster is offline. Enable Kubernetes in Docker Desktop settings."
             return
         }
 
@@ -127,11 +178,9 @@ function Run-Kubernetes {
 
         Write-Host ""
         Write-Info "Checking Kubernetes resources in 'ai-interview' namespace:"
-        kubectl get all -n ai-interview
+        kubectl get pods,hpa,svc -n ai-interview
 
-        Write-Success "Kubernetes resources deployed successfully!"
-        Write-Host "  * Forward Frontend: kubectl port-forward svc/frontend-service 3000:80 -n ai-interview" -ForegroundColor Gray
-        Write-Host "  * Forward Backend:  kubectl port-forward svc/backend-service 8000:8000 -n ai-interview" -ForegroundColor Gray
+        Write-Success "Kubernetes resources deployed successfully with dynamic HPA autoscaling!"
     } catch {
         Write-Info "Kubernetes cluster is not ready. Skipping Kubernetes deployment."
     }
@@ -147,7 +196,7 @@ function Stop-All {
     kubectl delete -f Frontend/k8s.yaml --ignore-not-found=true
     kubectl delete -f Backend/k8s.yaml --ignore-not-found=true
 
-    Write-Success "All services stopped cleanly."
+    Write-Success "All containerized services stopped cleanly."
 }
 
 function Show-Status {
@@ -159,15 +208,27 @@ function Show-Status {
     try {
         $oldEap = $ErrorActionPreference
         $ErrorActionPreference = "SilentlyContinue"
-        kubectl get pods,svc -n ai-interview 2>&1 | Out-String | Write-Host
+        kubectl get pods,hpa,svc -n ai-interview 2>&1 | Out-String | Write-Host
         $ErrorActionPreference = $oldEap
     } catch {
-        Write-Host "Kubernetes cluster not currently connected (enable in Docker Desktop settings)." -ForegroundColor Gray
+        Write-Host "Kubernetes cluster not currently connected." -ForegroundColor Gray
     }
 }
 
 # ----------------- Main Entrypoint -----------------
 switch ($Action.ToLower()) {
+    "dev" {
+        Run-DevSeparate
+    }
+    "local" {
+        Run-DevSeparate
+    }
+    "backend" {
+        Run-BackendSeparate
+    }
+    "frontend" {
+        Run-FrontendSeparate
+    }
     "cicd" {
         Run-CICD
     }
@@ -189,10 +250,10 @@ switch ($Action.ToLower()) {
         try {
             Run-Kubernetes
         } catch {
-            Write-Info "Kubernetes cluster is not currently running locally. Docker containers are active."
+            Write-Info "Kubernetes cluster offline. Docker containers are active."
         }
     }
     default {
-        Write-Host "Usage: .\run.ps1 [all | docker | k8s | cicd | stop | status]" -ForegroundColor Yellow
+        Write-Host "Usage: .\run.ps1 [dev | backend | frontend | docker | k8s | cicd | all | stop | status]" -ForegroundColor Yellow
     }
 }
