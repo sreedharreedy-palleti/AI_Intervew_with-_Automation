@@ -1,6 +1,7 @@
 # ========================================================
 # AI Interview Platform - Backend Kubernetes Specification
-# Contains: Namespace, ConfigMap, Secret, PVC, Deployment, Service, HPA
+# Highly Available & High-Concurrency Auto-Scaling Architecture
+# Scales dynamically based on live candidate interview & exam load
 # Apply with: kubectl apply -f Backend/k8s.yaml
 # ========================================================
 
@@ -20,7 +21,7 @@ data:
   PROJECT_NAME: "AI Interview Platform"
   API_V1_STR: "/api/v1"
   PORT: "8000"
-  DATABASE_NAME: "ai_interview_db"
+  DATABASE_NAME: "interview_db"
   CORS_ORIGINS: "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000"
   JWT_ALGORITHM: "HS256"
   ACCESS_TOKEN_EXPIRE_MINUTES: "1440"
@@ -40,26 +41,12 @@ metadata:
     app: ai-interview-backend
 type: Opaque
 stringData:
-  MONGO_URI: "mongodb+srv://user:password@cluster.mongodb.net/?retryWrites=true&w=majority"
-  JWT_SECRET_KEY: "change-this-to-a-very-secure-jwt-secret-key"
-  SMTP_USER: "your-email@example.com"
-  SMTP_PASSWORD: "your-email-app-password"
-  GEMINI_API_KEY: "AIzaSyYourGeminiApiKeyHere"
-  GROQ_API_KEY: "gsk_YourGroqApiKeyHere"
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: backend-storage-pvc
-  namespace: ai-interview
-  labels:
-    app: ai-interview-backend
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 5Gi
+  MONGO_URI: "mongodb+srv://rnani7046_db_user:yP12QMpKzf1iOzEe@cluster0.g38ahsr.mongodb.net"
+  JWT_SECRET_KEY: "fe013904d35cff52404de4fdc8d2eb436d22a64326c82fcbe740123c0fa29c3a"
+  SMTP_USER: "rnani7046@gmail.com"
+  SMTP_PASSWORD: "cqxa zaam jkkd xwhb"
+  GEMINI_API_KEY: ""
+  GROQ_API_KEY: ""
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -69,11 +56,11 @@ metadata:
   labels:
     app: ai-interview-backend
 spec:
-  replicas: 2
+  replicas: 3
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxSurge: 1
+      maxSurge: 2
       maxUnavailable: 0
   selector:
     matchLabels:
@@ -101,13 +88,21 @@ spec:
               cpu: "250m"
               memory: "512Mi"
             limits:
-              cpu: "1000m"
-              memory: "2Gi"
+              cpu: "2000m"
+              memory: "2500Mi"
+          startupProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 12
           livenessProbe:
             httpGet:
               path: /
               port: 8000
-            initialDelaySeconds: 30
+            initialDelaySeconds: 15
             periodSeconds: 15
             timeoutSeconds: 5
             failureThreshold: 3
@@ -115,21 +110,20 @@ spec:
             httpGet:
               path: /
               port: 8000
-            initialDelaySeconds: 15
+            initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
           volumeMounts:
-            - name: storage-volume
+            - name: temp-storage
               mountPath: /app/static/downloads
               subPath: downloads
-            - name: storage-volume
+            - name: temp-storage
               mountPath: /app/uploads
               subPath: uploads
       volumes:
-        - name: storage-volume
-          persistentVolumeClaim:
-            claimName: backend-storage-pvc
+        - name: temp-storage
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -160,19 +154,49 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: backend-deployment
-  minReplicas: 2
-  maxReplicas: 10
+  minReplicas: 3
+  maxReplicas: 20
   metrics:
     - type: Resource
       resource:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: 75
+          averageUtilization: 60
     - type: Resource
       resource:
         name: memory
         target:
           type: Utilization
-          averageUtilization: 80
-
+          averageUtilization: 70
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 15
+        - type: Pods
+          value: 4
+          periodSeconds: 15
+      selectPolicy: Max
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Percent
+          value: 25
+          periodSeconds: 60
+      selectPolicy: Min
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: backend-pdb
+  namespace: ai-interview
+  labels:
+    app: ai-interview-backend
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: ai-interview-backend
