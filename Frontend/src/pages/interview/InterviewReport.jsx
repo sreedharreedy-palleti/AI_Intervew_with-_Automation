@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Award,
   CheckCircle,
@@ -14,14 +14,48 @@ import {
   Smartphone,
   Users,
   Volume2,
+  RotateCcw,
 } from 'lucide-react';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
+import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../hooks/useToast';
+import interviewApi from '../../api/interviewApi';
 
-const InterviewReport = ({ report }) => {
+const InterviewReport = ({ report, interviewToken, onRetake }) => {
+  const { user } = useAuth();
+  const toast = useToast();
+  const navigate = useNavigate();
+  const [isResetting, setIsResetting] = useState(false);
+
   const overallScore = Math.round(report.overall_score || 0);
   const verdict = report.hiring_verdict || 'Hire';
   const isHire = verdict.includes('Hire');
+
+  const isUnlimitedTrial = Boolean(
+    report.is_unlimited_trial ||
+    user?.email?.trim().toLowerCase() === '23091a32j4@rgmcet.edu.in'
+  );
+
+  const handleRetake = async () => {
+    if (!window.confirm('Start a fresh AI Interview session (Unlimited Free Trial)?')) return;
+    setIsResetting(true);
+    try {
+      if (interviewToken) {
+        await interviewApi.resetTrial(interviewToken);
+      }
+      toast.success('Interview session reset! Launching fresh interview.');
+      if (onRetake) {
+        onRetake();
+      } else {
+        navigate('/interview/start?force_restart=true', { replace: true });
+        window.location.reload();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.detail || err.message || 'Failed to reset interview');
+      setIsResetting(false);
+    }
+  };
 
   return (
     <div style={{ maxWidth: '880px', margin: '2rem auto', padding: '0 1rem', paddingBottom: '4rem' }}>
@@ -277,13 +311,44 @@ const InterviewReport = ({ report }) => {
         )}
 
         {/* Action Buttons */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+          {isUnlimitedTrial && (
+            <button
+              type="button"
+              onClick={handleRetake}
+              disabled={isResetting}
+              className="btn btn-warning"
+              style={{
+                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                fontWeight: 700,
+                color: '#fff',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '0.65rem 1.25rem',
+                borderRadius: 'var(--radius-md)',
+              }}
+            >
+              <RotateCcw size={16} />
+              <span>{isResetting ? 'Resetting...' : 'Retake Interview (Unlimited Free Trial)'}</span>
+            </button>
+          )}
           <Link to="/courses" className="btn btn-secondary">
             Back to Course Catalog
           </Link>
           <Link to="/my-enrollments" className="btn btn-primary">
             View My Applications Portal
           </Link>
+        </div>
+
+        <div style={{ width: '100%', textAlign: 'center', marginTop: '1.25rem', fontSize: '0.85rem', color: isUnlimitedTrial ? '#a5b4fc' : '#94a3b8' }}>
+          {isUnlimitedTrial ? (
+            <span>★ Unlimited Free Trial Active for <strong>23091a32j4@rgmcet.edu.in</strong> (Unlimited Retries)</span>
+          ) : (
+            <span>Candidate Examination Policy: <strong>Single Attempt Limit (1/1 Interview Completed)</strong></span>
+          )}
         </div>
       </Card>
     </div>

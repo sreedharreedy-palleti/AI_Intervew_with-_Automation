@@ -134,7 +134,7 @@ const EnrollmentStatusCard = ({ course }) => {
                 }}
               >
                 <Sparkles size={14} color="#818cf8" />
-                <span>Free Demo AI Interview Active</span>
+                <span>Unlimited Free Trial Active (Retake Anytime)</span>
               </div>
               <Link
                 to={
@@ -151,7 +151,7 @@ const EnrollmentStatusCard = ({ course }) => {
                 }}
               >
                 <Sparkles size={14} />
-                <span>Start Stage 2: AI Interview (Camera & Mic Check)</span>
+                <span>Start Stage 2: AI Interview (Unlimited Trial)</span>
               </Link>
             </div>
           )}
@@ -232,6 +232,11 @@ const EnrollmentStatusCard = ({ course }) => {
                     >
                       <span>View Assessment Result ({Math.round(course.assignment_score ?? 0)}%)</span>
                     </Link>
+                  )}
+                  {!isDemoUser && (
+                    <div style={{ fontSize: '0.72rem', color: '#94a3b8', textAlign: 'center', marginTop: '2px' }}>
+                      Single Attempt Policy: 1/1 Completed
+                    </div>
                   )}
                 </div>
               ) : isTerminated ? (

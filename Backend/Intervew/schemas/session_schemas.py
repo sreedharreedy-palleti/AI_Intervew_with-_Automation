@@ -25,6 +25,7 @@ class InterviewStartRequest(BaseModel):
     user_id: Optional[str] = None
     candidate_name: Optional[str] = None
     candidate_email: Optional[str] = None
+    force_restart: Optional[bool] = False
 
 
 class InterviewSessionResponse(BaseModel):
@@ -43,4 +44,6 @@ class InterviewSessionResponse(BaseModel):
     started_at: str
     completed_at: Optional[str] = None
     precheck_verified: Optional[bool] = False
+    is_unlimited_trial: Optional[bool] = False
+    attempts_remaining: Optional[str] = None
 

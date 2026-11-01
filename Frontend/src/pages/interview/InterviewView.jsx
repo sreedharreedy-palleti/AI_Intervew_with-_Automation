@@ -45,6 +45,7 @@ const InterviewView = () => {
       // 2. Otherwise start/resume via query parameters (e.g. ?assignment_token=... or ?user_id=...)
       const assignmentTokenParam = searchParams.get('assignment_token');
       const courseIdParam = searchParams.get('course_id');
+      const forceRestartParam = searchParams.get('force_restart') === 'true';
 
       const data = await interviewApi.startOrResumeInterview({
         assignment_token: assignmentTokenParam,
@@ -52,6 +53,7 @@ const InterviewView = () => {
         user_id: user?.id,
         candidate_name: user?.name,
         candidate_email: user?.email,
+        force_restart: forceRestartParam,
       });
 
       setSession(data);
@@ -115,7 +117,16 @@ const InterviewView = () => {
 
   // Completed State: Show Scorecard
   if (finalReport || session?.status === 'completed') {
-    return <InterviewReport report={finalReport || session?.final_report || {}} />;
+    return (
+      <InterviewReport
+        report={finalReport || session?.final_report || {}}
+        interviewToken={session?.interview_token || interviewToken}
+        onRetake={() => {
+          navigate('/interview/start?force_restart=true', { replace: true });
+          window.location.reload();
+        }}
+      />
+    );
   }
 
   // Precheck Verification: Hardware Camera & Microphone Access Check

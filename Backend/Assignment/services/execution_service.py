@@ -5,6 +5,8 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from Assignment.services.code_runner import execute_test_cases
 
+UNLIMITED_TRIAL_EMAILS = {"23091a32j4@rgmcet.edu.in"}
+
 
 async def service_run_tests(
     assignment_token: str,
@@ -19,6 +21,14 @@ async def service_run_tests(
     assign_doc = await db["assignments"].find_one({"assignment_token": assignment_token})
     if not assign_doc:
         raise HTTPException(status_code=404, detail="Assessment not found.")
+
+    candidate_email = (assign_doc.get("candidate_email") or "").strip().lower()
+    is_unlimited = candidate_email in UNLIMITED_TRIAL_EMAILS
+    if assign_doc.get("status") in ["submitted", "terminated_violation"] and not is_unlimited:
+        raise HTTPException(
+            status_code=403,
+            detail="Assessment has already been completed. Code testing is locked for single-attempt candidates."
+        )
 
     target_q = next((q for q in assign_doc.get("questions", []) if q.get("id") == question_id), None)
     if not target_q:

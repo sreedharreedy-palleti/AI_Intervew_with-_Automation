@@ -141,6 +141,22 @@ async def service_start_or_resume_interview(
     })
 
     if existing_session:
+        # Check if already completed or terminated
+        if existing_session.get("status") in ("completed", "terminated_violation"):
+            if not is_demo_access:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You have already completed your 1 permitted interview attempt. Multiple attempts are not permitted for regular candidates."
+                )
+            else:
+                # Unlimited free trial account (23091a32j4@rgmcet.edu.in): delete old session to launch fresh
+                await db["interviews"].delete_one({"_id": existing_session["_id"]})
+                existing_session = None
+        elif getattr(payload, "force_restart", False) and is_demo_access:
+            await db["interviews"].delete_one({"_id": existing_session["_id"]})
+            existing_session = None
+
+    if existing_session:
         idx = existing_session.get("current_question_index", 0)
         questions = existing_session.get("questions", [])
         curr_q = questions[idx] if idx < len(questions) else None
@@ -158,6 +174,8 @@ async def service_start_or_resume_interview(
             "started_at": existing_session.get("started_at", datetime.now(timezone.utc).isoformat()),
             "completed_at": existing_session.get("completed_at"),
             "precheck_verified": existing_session.get("precheck_verified", False),
+            "is_unlimited_trial": is_demo_access,
+            "attempts_remaining": "unlimited" if is_demo_access else "0",
         }
 
     # Generate custom progressive questions via Gemini
@@ -196,6 +214,8 @@ async def service_start_or_resume_interview(
         "completed_at": None,
         "final_report": None,
         "precheck_verified": False,
+        "is_unlimited_trial": is_demo_access,
+        "attempts_remaining": "unlimited" if is_demo_access else "0",
     }
 
     await db["interviews"].insert_one(new_session_doc)
@@ -240,6 +260,8 @@ async def service_start_or_resume_interview(
         "started_at": now_iso,
         "completed_at": None,
         "precheck_verified": False,
+        "is_unlimited_trial": is_demo_access,
+        "attempts_remaining": "unlimited" if is_demo_access else "0",
     }
 
 
@@ -258,6 +280,8 @@ async def service_get_interview_session(
     questions = session.get("questions", [])
     curr_q = questions[idx] if idx < len(questions) else None
 
+    is_unlimited = (session.get("candidate_email") or "").strip().lower() in DEMO_TESTING_EMAILS
+
     return {
         "interview_token": session["interview_token"],
         "status": session.get("status", "in_progress"),
@@ -272,6 +296,8 @@ async def service_get_interview_session(
         "completed_at": session.get("completed_at"),
         "final_report": session.get("final_report"),
         "precheck_verified": session.get("precheck_verified", False),
+        "is_unlimited_trial": is_unlimited,
+        "attempts_remaining": "unlimited" if is_unlimited else "0",
     }
 
 

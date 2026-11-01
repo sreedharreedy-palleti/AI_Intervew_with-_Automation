@@ -9,6 +9,8 @@ from Assignment.services.assignment_generator import (
     generate_ai_submission_review,
 )
 
+UNLIMITED_TRIAL_EMAILS = {"23091a32j4@rgmcet.edu.in"}
+
 
 async def service_submit_assignment(
     assignment_token: str,
@@ -22,6 +24,16 @@ async def service_submit_assignment(
     assign_doc = await db["assignments"].find_one({"assignment_token": assignment_token})
     if not assign_doc:
         raise HTTPException(status_code=404, detail="Assessment not found.")
+
+    candidate_email = (assign_doc.get("candidate_email") or "").strip().lower()
+    is_unlimited_tester = candidate_email in UNLIMITED_TRIAL_EMAILS
+
+    # Enforce strict 1-attempt rule for regular candidates
+    if assign_doc.get("status") in ["submitted", "terminated_violation"] and not is_unlimited_tester:
+        raise HTTPException(
+            status_code=403,
+            detail="You have already completed your 1 permitted attempt for this coding assessment. Multiple attempts are not permitted."
+        )
 
     submissions_map = {s["question_id"]: s for s in submissions}
     questions = assign_doc.get("questions", [])

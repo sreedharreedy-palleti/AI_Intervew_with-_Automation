@@ -48,6 +48,11 @@ export const interviewApi = {
     const res = await apiClient.post(`/api/v1/interview/${interviewToken}/schedule`, payload);
     return res.data;
   },
+
+  resetTrial: async (interviewToken) => {
+    const res = await apiClient.post(`/api/v1/interview/${interviewToken}/reset-trial`);
+    return res.data;
+  },
 };
 
 export default interviewApi;

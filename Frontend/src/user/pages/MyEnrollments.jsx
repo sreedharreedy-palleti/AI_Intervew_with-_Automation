@@ -95,22 +95,22 @@ const MyEnrollments = () => {
               </div>
               <div>
                 <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span>Free AI Interview Demo Access Activated</span>
+                  <span>Unlimited Free Trial Active</span>
                   <span
                     style={{
                       fontSize: '0.72rem',
-                      background: '#4f46e5',
+                      background: '#10b981',
                       color: '#fff',
                       padding: '2px 8px',
                       borderRadius: '10px',
                       fontWeight: 700,
                     }}
                   >
-                    TESTING MODE
+                    UNLIMITED TRIAL
                   </span>
                 </div>
                 <div style={{ fontSize: '0.85rem', color: '#c7d2fe', marginTop: '3px' }}>
-                  Account <strong>{user?.email}</strong> is granted VIP bypass to freely test the Stage 2 AI Technical Interview (including Camera & Audio Access checks, dynamic Gemini questions, live transcription, and real-time scorecards).
+                  Account <strong>{user?.email}</strong> is granted unlimited free retries and test sessions for AI Interviews and Coding Assessments. Normal candidate accounts are strictly restricted to 1 attempt.
                 </div>
               </div>
             </div>

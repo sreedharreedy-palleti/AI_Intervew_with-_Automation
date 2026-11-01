@@ -42,6 +42,8 @@ class AssignmentDetailsResponse(BaseModel):
     terminated_at: Optional[str] = None
     proctor_logs: Optional[List[Dict[str, Any]]] = None
     proctor_violation_history: Optional[List[Dict[str, Any]]] = None
+    is_unlimited_trial: bool = False
+    attempt_limit: Optional[str] = "1"
 
 
 __all__ = [

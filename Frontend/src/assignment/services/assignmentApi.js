@@ -83,6 +83,14 @@ export const assignmentApi = {
     const response = await apiClient.post(`/api/v1/assignment/${token}/proctor/verify-precheck`, payload);
     return response.data;
   },
+
+  /**
+   * Resets assessment for unlimited trial testing accounts.
+   */
+  resetTrial: async (token) => {
+    const response = await apiClient.post(`/api/v1/assignment/${token}/reset-trial`);
+    return response.data;
+  },
 };
 
 export default assignmentApi;

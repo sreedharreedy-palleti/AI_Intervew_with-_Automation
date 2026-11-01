@@ -23,6 +23,7 @@ _active_enrollments = set()
 
 
 DEMO_TESTING_EMAILS = {"23091a32j4@rgmcet.edu.in"}
+UNLIMITED_TRIAL_EMAILS = DEMO_TESTING_EMAILS
 
 
 def format_user_course(doc: dict, user_id: str, user_email: str = "") -> dict:
@@ -59,6 +60,8 @@ def format_user_course(doc: dict, user_id: str, user_email: str = "") -> dict:
         "interview_token": student_record.get("interview_token") if student_record else None,
         "interview_status": student_record.get("interview_status") if student_record else None,
         "is_demo_interview_access": is_demo,
+        "is_unlimited_trial": is_demo,
+        "attempt_limit": "unlimited" if is_demo else 1,
     }
 
 
@@ -99,18 +102,43 @@ async def service_enroll_user_with_ai(
 
     user_id = str(current_user["_id"]).strip()
     user_email = str(current_user.get("email") or "").strip().lower()
+    is_unlimited_tester = user_email in UNLIMITED_TRIAL_EMAILS
 
     # Pre-check existing enrollment in roster
     active_students = course_doc.get("enrolled_students", [])
-    if any(
+    already_enrolled = any(
         (s.get("user_id") and str(s.get("user_id")).strip() == user_id)
         or (s.get("email") and str(s.get("email")).strip().lower() == user_email)
         for s in active_students
-    ):
-        raise HTTPException(
-            status_code=400,
-            detail="You are already enrolled in this course track. Re-enrollment is not allowed."
-        )
+    )
+
+    if already_enrolled:
+        if not is_unlimited_tester:
+            raise HTTPException(
+                status_code=400,
+                detail="You have already applied and enrolled in this course track. Candidates are allowed 1 attempt only."
+            )
+        else:
+            # Unlimited free trial for 23091a32j4@rgmcet.edu.in: remove prior records for fresh retry
+            await db["courses"].update_one(
+                {"_id": ObjectId(course_id)},
+                {"$pull": {
+                    "enrolled_students": {
+                        "$or": [
+                            {"user_id": user_id},
+                            {"email": user_email}
+                        ]
+                    }
+                }}
+            )
+            await db["assignments"].delete_many({
+                "course_id": str(course_id),
+                "$or": [{"user_id": user_id}, {"candidate_email": user_email}]
+            })
+            await db["interviews"].delete_many({
+                "course_id": str(course_id),
+                "$or": [{"user_id": user_id}, {"candidate_email": user_email}]
+            })
 
     # In-memory lock keys to prevent duplicate in-flight requests (race condition)
     lock_key = f"{user_id}:{course_id}"

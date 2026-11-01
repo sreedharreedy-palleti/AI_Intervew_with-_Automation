@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { assignmentApi } from '../../api/assignmentApi';
 import { API_BASE_URL } from '../../utils/constants';
+import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
@@ -93,11 +94,32 @@ int solution(int data) {
 
 const AssignmentView = () => {
   const { assignmentToken } = useParams();
+  const { user } = useAuth();
   const toast = useToast();
+
+  const isUnlimitedTrial = Boolean(
+    user?.email?.trim().toLowerCase() === '23091a32j4@rgmcet.edu.in'
+  );
 
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [assignment, setAssignment] = useState(null);
+
+  const handleResetTrial = async () => {
+    if (!window.confirm('Reset this coding assessment and start a fresh attempt (Unlimited Free Trial)?')) return;
+    try {
+      setIsLoading(true);
+      await assignmentApi.resetTrial(assignmentToken);
+      toast.success('Assessment reset! Starting fresh attempt.');
+      setSubmissionCompleted(false);
+      setSubmissionReport(null);
+      setIsExamTerminated(false);
+      window.location.reload();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || err.message || 'Failed to reset assessment');
+      setIsLoading(false);
+    }
+  };
 
   // Active question index (0 or 1)
   const [activeQIndex, setActiveQIndex] = useState(0);
@@ -725,12 +747,41 @@ const AssignmentView = () => {
                 <span>Launch Stage 2: AI Interview (Camera & Mic Check)</span>
               </Link>
             )}
+            {isUnlimitedTrial && (
+              <button
+                type="button"
+                onClick={handleResetTrial}
+                className="btn btn-warning"
+                style={{
+                  background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
+                  fontWeight: 700,
+                  color: '#fff',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '0.65rem 1.25rem',
+                  borderRadius: 'var(--radius-md)',
+                }}
+              >
+                <RotateCcw size={16} />
+                <span>Retake Assessment (Unlimited Free Trial)</span>
+              </button>
+            )}
             <Link to="/my-enrollments" className="btn btn-secondary">
               View My Applications
             </Link>
             <Link to="/courses" className="btn btn-secondary">
               Back to Catalog
             </Link>
+          </div>
+          <div style={{ width: '100%', textAlign: 'center', marginTop: '1.25rem', fontSize: '0.85rem', color: isUnlimitedTrial ? '#a5b4fc' : '#94a3b8' }}>
+            {isUnlimitedTrial ? (
+              <span>★ Unlimited Free Trial Active for <strong>23091a32j4@rgmcet.edu.in</strong> (Unlimited Retries)</span>
+            ) : (
+              <span>Candidate Examination Policy: <strong>Single Attempt Limit (1/1 Completed)</strong></span>
+            )}
           </div>
         </div>
       </div>

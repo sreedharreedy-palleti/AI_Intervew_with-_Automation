@@ -9,6 +9,8 @@ from Assignment.services.assignment_generator import (
     generate_coding_assignment_with_ollama,
 )
 
+UNLIMITED_TRIAL_EMAILS = {"23091a32j4@rgmcet.edu.in"}
+
 
 def parse_and_check_schedule(
     assignment_datetime_val: Optional[str],
@@ -138,6 +140,8 @@ def sanitize_assignment_for_client(
         "terminated_at": assign_doc.get("terminated_at"),
         "proctor_logs": assign_doc.get("proctor_logs", []),
         "proctor_violation_history": assign_doc.get("proctor_violation_history", []),
+        "is_unlimited_trial": (assign_doc.get("candidate_email") or "").strip().lower() in UNLIMITED_TRIAL_EMAILS,
+        "attempt_limit": "unlimited" if ((assign_doc.get("candidate_email") or "").strip().lower() in UNLIMITED_TRIAL_EMAILS) else "1",
     }
 
 

@@ -83,9 +83,27 @@ async def check_candidate_interview_qualification(
         ]
     })
 
+    # If regular candidate has already completed or terminated their 1 attempt, lock qualification
+    if not is_demo_tester and existing_interview and existing_interview.get("status") in ("completed", "terminated_violation"):
+        return {
+            "qualified": False,
+            "is_demo_access": False,
+            "is_unlimited_trial": False,
+            "attempts_remaining": "0",
+            "score": score,
+            "cutoff": 50.0,
+            "status": "attempt_exhausted",
+            "assignment_token": assignment_token,
+            "interview_token": existing_interview["interview_token"],
+            "interview_status": existing_interview.get("status"),
+            "message": "You have already completed your 1 permitted interview attempt. Multiple attempts are not permitted.",
+        }
+
     return {
         "qualified": qualified,
         "is_demo_access": is_demo_tester,
+        "is_unlimited_trial": is_demo_tester,
+        "attempts_remaining": "unlimited" if is_demo_tester else "1",
         "score": score,
         "cutoff": 50.0,
         "status": "selected_for_interview" if qualified else "not_qualified",
@@ -97,10 +115,10 @@ async def check_candidate_interview_qualification(
             else ("ready_to_start" if qualified else "ineligible")
         ),
         "message": (
-            f"Free demo testing access active for {user_email}."
+            f"Unlimited free trial access active for {user_email}."
             if is_demo_tester
             else (
-                f"Candidate achieved {score}%, qualifying for the AI Interview process."
+                f"Candidate achieved {score}%, qualifying for the AI Interview process (1 attempt)."
                 if qualified
                 else f"Candidate achieved {score}%, which is below the 50% threshold."
             )
@@ -117,4 +135,29 @@ async def get_interview_session(
     Retrieves the active interview state, questions, and current question index.
     """
     return await service_get_interview_session(interview_token, db)
+
+
+@router.post("/{interview_token}/reset-trial")
+async def reset_interview_for_unlimited_trial(
+    interview_token: str,
+    db: AsyncIOMotorDatabase = Depends(get_database),
+):
+    """
+    Resets the interview session for unlimited trial account (23091a32j4@rgmcet.edu.in).
+    Normal candidates are locked to 1 attempt.
+    """
+    from fastapi import HTTPException
+    session = await db["interviews"].find_one({"interview_token": interview_token})
+    if not session:
+        raise HTTPException(status_code=404, detail="Interview session not found.")
+
+    candidate_email = (session.get("candidate_email") or "").strip().lower()
+    if candidate_email not in DEMO_TESTING_EMAILS:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Resetting interviews is only permitted for the unlimited trial account (23091a32j4@rgmcet.edu.in). Regular candidates have a 1-attempt limit."
+        )
+
+    await db["interviews"].delete_one({"_id": session["_id"]})
+    return {"message": "Interview session reset successfully. You can launch a fresh interview.", "status": "reset"}
 
