@@ -38,6 +38,7 @@ import {
   Volume2,
   AlertOctagon,
   Calendar,
+  Download,
 } from 'lucide-react';
 import ChromeRequiredCard from '../../components/common/ChromeRequiredCard';
 import { checkIsGoogleChrome } from '../../utils/browserCheck';
@@ -1054,6 +1055,18 @@ const AssignmentView = () => {
         </div>
 
         <div className="assignment-header-actions">
+          {/* Download Desktop App (.exe) Button */}
+          <a
+            href={`${API_BASE_URL}/api/v1/assignment/download/app`}
+            download="AIAssignmentSetup.exe"
+            className="btn btn-secondary btn-sm"
+            style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            title="Download dedicated AI Assignment Desktop Application (.exe)"
+          >
+            <Download size={14} />
+            <span>Desktop App (.exe)</span>
+          </a>
+
           {/* Live countdown timer */}
           <div className={`timer-pill ${timeLeft < 600 ? 'warning' : ''}`}>
             <Clock size={16} />

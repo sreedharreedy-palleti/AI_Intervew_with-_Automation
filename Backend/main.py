@@ -1,3 +1,19 @@
+import os
+import sys
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Ensure Backend directory is in sys.path and .env is loaded
+BASE_DIR = Path(__file__).resolve().parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
+env_file = BASE_DIR / ".env"
+if env_file.exists():
+    load_dotenv(dotenv_path=env_file)
+else:
+    load_dotenv()
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,6 +30,7 @@ from Users.services.resume_storage_service import (
     migrate_disk_resumes_to_mongo,
     service_get_resume_file,
 )
+from Assignment.routes.portal_routes import download_assignment_app
 
 
 @asynccontextmanager
@@ -57,6 +74,11 @@ async def get_legacy_uploaded_resume(
     Streams legacy candidate resume directly from MongoDB without requiring disk files.
     """
     return await service_get_resume_file(filename, db)
+
+
+@app.get("/download/app", tags=["Downloads"])
+async def root_download_assignment_app():
+    return await download_assignment_app()
 
 
 @app.get("/", tags=["Health"])

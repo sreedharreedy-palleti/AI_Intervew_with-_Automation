@@ -40,6 +40,7 @@ def notify_shortlisted_candidate(
     c_unique_code = unique_code or "EXAM-REQUIRED"
     c_routine = assignment_datetime or "Active & Open for 48 Hours"
     assignment_web_link = f"{CLIENT_ORIGIN}/assignment/{test_token}"
+    app_download_link = f"{BACKEND_ORIGIN}/api/v1/assignment/download/app"
 
     message = MIMEMultipart("alternative")
     message["Subject"] = f"Shortlisted & AI Coding Assignment Access: {course}"
@@ -98,28 +99,51 @@ def notify_shortlisted_candidate(
         <!-- AI Assignment Notification Banner -->
         <div style="background: rgba(16, 185, 129, 0.08); border-left: 4px solid #10b981; border-radius: 0 8px 8px 0; padding: 14px 16px; margin: 22px 0;">
           <h4 style="color: #34d399; margin: 0 0 6px 0; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">
-            ✨ AI Coding Assessment Ready (Google Chrome Only)
+            ✨ Official AI Coding Simulation Client & Web Portal
           </h4>
           <p style="color: #cbd5e1; font-size: 13px; line-height: 1.5; margin: 0;">
-            Your personalized technical assignment has been generated. This assessment must be completed exclusively inside <strong>Google Chrome</strong> browser with real-time test execution and AI evaluation. No download is required.
+            Your personalized technical assignment has been generated. You can download the dedicated <strong>AI Assignment Desktop Application (.exe)</strong> or launch directly in Google Chrome.
           </p>
         </div>
 
-        <!-- AI Assignment Actions Box -->
-        <div style="background: rgba(99, 102, 241, 0.07); border: 1px dashed rgba(99, 102, 241, 0.45); border-radius: 12px; padding: 26px 20px; text-align: center; margin: 26px 0;">
-          <p style="color: #e2e8f0; font-weight: 700; font-size: 16px; margin: 0 0 16px 0;">
-            Access Your AI Coding Assessment
+        <!-- Download Dedicated Application (.exe) Box -->
+        <div style="background: rgba(99, 102, 241, 0.08); border: 2px solid rgba(99, 102, 241, 0.45); border-radius: 12px; padding: 24px 20px; text-align: center; margin: 24px 0;">
+          <div style="display: inline-block; background: #4f46e5; color: #ffffff; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 4px 10px; border-radius: 4px; margin-bottom: 12px;">
+            Recommended Desktop Client
+          </div>
+          <h3 style="color: #ffffff; font-size: 18px; margin: 0 0 8px 0; font-weight: 700;">
+            Download AI Assignment App (.exe)
+          </h3>
+          <p style="color: #94a3b8; font-size: 13px; line-height: 1.5; margin: 0 0 16px 0;">
+            Install our dedicated desktop client for a secure, distraction-free environment with integrated proctoring and code execution.
           </p>
-          
-          <div style="margin-bottom: 8px;">
-            <a href="{assignment_web_link}" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 15px; display: inline-block; box-shadow: 0 4px 14px rgba(79, 70, 229, 0.45);">
-              🚀 Open Assignment in Google Chrome
+
+          <div style="margin-bottom: 14px;">
+            <a href="{app_download_link}" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: 800; font-size: 15px; display: inline-block; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.45);">
+              📥 Download AIAssignmentSetup.exe (Windows)
             </a>
           </div>
 
-          <p style="color: #94a3b8; font-size: 12px; margin: 12px 0 0 0; line-height: 1.5;">
-            Important: Open this link directly in Google Chrome. Solve your technical challenges with live test execution and automatic evaluation. No downloads required.
+          <!-- Installation Steps -->
+          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 14px; text-align: left; font-size: 12px; color: #cbd5e1; margin-top: 14px;">
+            <strong style="color: #60a5fa; font-size: 13px;">Simple Installation & Launch Steps:</strong>
+            <ol style="margin: 8px 0 0 18px; padding: 0; line-height: 1.7;">
+              <li>Click the green button above to download <strong>AIAssignmentSetup.exe</strong>.</li>
+              <li>Run the application installer on your Windows computer.</li>
+              <li>Enter your Registered Username (<strong>{c_username}</strong>) and Unique Exam Code (<strong>{c_unique_code}</strong>).</li>
+              <li>Click <strong>Launch Secure Assessment Window</strong> to begin your assessment!</li>
+            </ol>
+          </div>
+        </div>
+
+        <!-- Web Browser Fallback Box -->
+        <div style="background: rgba(30, 41, 59, 0.4); border: 1px dashed rgba(255, 255, 255, 0.18); border-radius: 10px; padding: 16px 20px; text-align: center; margin: 20px 0;">
+          <p style="color: #9ca3af; font-size: 12px; margin: 0 0 8px 0;">
+            Or launch directly inside your web browser:
           </p>
+          <a href="{assignment_web_link}" style="color: #a5b4fc; text-decoration: underline; font-weight: 600; font-size: 13px;">
+            🚀 Open Assignment in Google Chrome Browser
+          </a>
         </div>
 
         <p style="color: #6b7280; font-size: 12px; text-align: center; margin-top: 10px;">
@@ -189,6 +213,7 @@ def notify_assignment_scheduled(
     c_username = username or email
     c_unique_code = unique_code or "EXAM-REQUIRED"
     assignment_link = f"{CLIENT_ORIGIN}/assignment/{test_token}"
+    app_download_link = f"{BACKEND_ORIGIN}/api/v1/assignment/download/app"
 
     message = MIMEMultipart("alternative")
     message["Subject"] = f"Scheduled AI Coding Assignment & Access Code: {course}"
@@ -250,19 +275,44 @@ def notify_assignment_scheduled(
           </table>
         </div>
 
-        <!-- Access AI Assignment Box -->
-        <div style="background: rgba(99, 102, 241, 0.07); border: 1px dashed rgba(99, 102, 241, 0.45); border-radius: 12px; padding: 26px 20px; text-align: center; margin: 26px 0;">
-          <p style="color: #e2e8f0; font-weight: 700; font-size: 16px; margin: 0 0 16px 0;">
-            Access Your AI Technical Assessment
+        <!-- Download Dedicated Application (.exe) Box -->
+        <div style="background: rgba(99, 102, 241, 0.08); border: 2px solid rgba(99, 102, 241, 0.45); border-radius: 12px; padding: 24px 20px; text-align: center; margin: 24px 0;">
+          <div style="display: inline-block; background: #4f46e5; color: #ffffff; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 4px 10px; border-radius: 4px; margin-bottom: 12px;">
+            Recommended Desktop Client
+          </div>
+          <h3 style="color: #ffffff; font-size: 18px; margin: 0 0 8px 0; font-weight: 700;">
+            Download AI Assignment App (.exe)
+          </h3>
+          <p style="color: #94a3b8; font-size: 13px; line-height: 1.5; margin: 0 0 16px 0;">
+            Install our dedicated desktop client for a secure, distraction-free environment with integrated proctoring and code execution.
           </p>
-          <div style="margin-bottom: 8px;">
-            <a href="{assignment_link}" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 15px; display: inline-block; box-shadow: 0 4px 14px rgba(79, 70, 229, 0.45);">
-              🚀 Open Assignment in Google Chrome
+
+          <div style="margin-bottom: 14px;">
+            <a href="{app_download_link}" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: 800; font-size: 15px; display: inline-block; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.45);">
+              📥 Download AIAssignmentSetup.exe (Windows)
             </a>
           </div>
-          <p style="color: #94a3b8; font-size: 12px; margin: 12px 0 0 0; line-height: 1.5;">
-            Click above at your scheduled time to access the online coding IDE in Google Chrome. No software download is required.
+
+          <!-- Installation Steps -->
+          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 14px; text-align: left; font-size: 12px; color: #cbd5e1; margin-top: 14px;">
+            <strong style="color: #60a5fa; font-size: 13px;">Simple Installation & Launch Steps:</strong>
+            <ol style="margin: 8px 0 0 18px; padding: 0; line-height: 1.7;">
+              <li>Click the green button above to download <strong>AIAssignmentSetup.exe</strong>.</li>
+              <li>Run the application installer on your Windows computer.</li>
+              <li>Enter your Registered Username (<strong>{c_username}</strong>) and Unique Exam Code (<strong>{c_unique_code}</strong>).</li>
+              <li>Click <strong>Launch Secure Assessment Window</strong> to begin your assessment!</li>
+            </ol>
+          </div>
+        </div>
+
+        <!-- Web Browser Fallback Box -->
+        <div style="background: rgba(30, 41, 59, 0.4); border: 1px dashed rgba(255, 255, 255, 0.18); border-radius: 10px; padding: 16px 20px; text-align: center; margin: 20px 0;">
+          <p style="color: #9ca3af; font-size: 12px; margin: 0 0 8px 0;">
+            Or launch directly inside your web browser at your scheduled time:
           </p>
+          <a href="{assignment_link}" style="color: #a5b4fc; text-decoration: underline; font-weight: 600; font-size: 13px;">
+            🚀 Open Assignment in Google Chrome Browser
+          </a>
         </div>
 
         <!-- Policy Guidelines -->

@@ -1,7 +1,28 @@
-from fastapi import APIRouter
-from fastapi.responses import HTMLResponse
+import os
+from pathlib import Path
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import HTMLResponse, FileResponse
 
 router = APIRouter()
+
+STATIC_DOWNLOADS_DIR = Path(__file__).resolve().parent.parent.parent / "static" / "downloads"
+EXE_FILE_PATH = STATIC_DOWNLOADS_DIR / "AIAssignmentSetup.exe"
+
+
+@router.get("/download/app")
+async def download_assignment_app():
+    """
+    Downloads the official AI Coding Assessment Desktop Application installer (.exe).
+    """
+    if not EXE_FILE_PATH.exists():
+        raise HTTPException(status_code=404, detail="AI Assignment desktop application setup is currently being prepared.")
+
+    return FileResponse(
+        path=str(EXE_FILE_PATH),
+        filename="AIAssignmentSetup.exe",
+        media_type="application/vnd.microsoft.portable-executable",
+        headers={"Content-Disposition": 'attachment; filename="AIAssignmentSetup.exe"'}
+    )
 
 
 @router.get("/app/launch/{assignment_token}", response_class=HTMLResponse)
