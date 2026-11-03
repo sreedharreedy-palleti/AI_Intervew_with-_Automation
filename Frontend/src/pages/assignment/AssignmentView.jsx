@@ -1069,10 +1069,41 @@ const AssignmentView = () => {
 
           {/* Action Buttons */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <Button
+              variant="primary"
+              onClick={async () => {
+                try {
+                  setIsLoading(true);
+                  if (activeToken && activeToken !== 'app') {
+                    await assignmentApi.resetTrial(activeToken);
+                  }
+                  toast.success('Assessment reset! Starting single-screen exam.');
+                  setIsExamTerminated(false);
+                  setIsDetailsVerified(false);
+                  setIsPrecheckVerified(false);
+                  window.location.reload();
+                } catch (e) {
+                  setIsExamTerminated(false);
+                  setIsDetailsVerified(false);
+                  setIsPrecheckVerified(false);
+                  setIsLoading(false);
+                }
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                fontWeight: 700,
+              }}
+            >
+              <RotateCcw size={16} />
+              <span>Restart & Begin on Single Screen</span>
+            </Button>
             <Link to="/courses" className="btn btn-secondary">
               Back to Catalog
             </Link>
-            <Link to="/my-enrollments" className="btn btn-primary">
+            <Link to="/my-enrollments" className="btn btn-secondary">
               View My Applications
             </Link>
           </div>

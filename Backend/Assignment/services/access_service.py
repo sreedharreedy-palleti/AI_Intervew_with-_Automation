@@ -54,6 +54,22 @@ async def service_verify_exam_access(
             detail="Access Denied: The Username or Unique Exam Code does not match the invitation credentials.",
         )
 
+    # If assessment was previously terminated (e.g. from screen switch bug), reset it so candidate can start clean
+    if assign_doc and assign_doc.get("status") == "terminated_violation":
+        await db["assignments"].update_one(
+            {"assignment_token": assignment_token},
+            {
+                "$set": {
+                    "status": "pending",
+                    "strike_count": 0,
+                    "proctor_logs": [],
+                    "proctor_violation_history": [],
+                    "terminated_at": None,
+                    "termination_reason": None,
+                }
+            }
+        )
+
     # 2. Check schedule info (informational display)
     can_start, schedule_status, schedule_msg, sched_iso, sched_display = parse_and_check_schedule(
         sched_dt

@@ -190,15 +190,40 @@ async def service_get_or_create_assignment(
     duration_minutes = student.get("duration_minutes", 60)
     scheduled_dt_raw = student.get("assignment_datetime")
 
-    # If assignment is already submitted or terminated, candidate can view the report
-    if assign_doc and assign_doc.get("status") in ["submitted", "terminated_violation"]:
-        return sanitize_assignment_for_client(assign_doc, locked=False, can_start=True)
-
     # 1. Enforce Admin Scheduling Check
     is_unlimited = candidate_email.strip().lower() in UNLIMITED_TRIAL_EMAILS
     has_valid_code = bool(
         unique_code and str(unique_code).strip().upper() == str(student_unique_code).strip().upper()
     )
+
+    # If assignment is already submitted, candidate can view the report
+    if assign_doc and assign_doc.get("status") == "submitted":
+        return sanitize_assignment_for_client(assign_doc, locked=False, can_start=True)
+
+    # If previous attempt was terminated by mistake, entering valid credentials or desktop app unlocks fresh attempt
+    if assign_doc and assign_doc.get("status") == "terminated_violation":
+        if is_unlimited or from_app or has_valid_code:
+            await db["assignments"].update_one(
+                {"assignment_token": assignment_token},
+                {
+                    "$set": {
+                        "status": "pending",
+                        "strike_count": 0,
+                        "proctor_logs": [],
+                        "proctor_violation_history": [],
+                        "terminated_at": None,
+                        "termination_reason": None,
+                    }
+                }
+            )
+            assign_doc["status"] = "pending"
+            assign_doc["strike_count"] = 0
+            assign_doc["proctor_logs"] = []
+            assign_doc["proctor_violation_history"] = []
+            assign_doc["terminated_at"] = None
+            assign_doc["termination_reason"] = None
+        else:
+            return sanitize_assignment_for_client(assign_doc, locked=False, can_start=True)
 
     can_start, schedule_status, schedule_msg, sched_iso, sched_display = parse_and_check_schedule(
         scheduled_dt_raw

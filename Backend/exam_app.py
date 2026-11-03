@@ -79,18 +79,19 @@ def main():
     browser = find_browser()
 
     if browser:
-        # Launch directly in locked kiosk application mode (full screen, hides taskbar & window controls)
+        # Launch directly in dedicated single application window mode
+        user_data = os.path.join(os.path.expandvars(r"%TEMP%"), "HirePulseExamProfile")
         cmd = [
             browser,
             f"--app={target_url}",
-            "--kiosk",
-            "--start-fullscreen",
+            f"--user-data-dir={user_data}",
+            "--start-maximized",
             "--disable-pinch",
             "--overscroll-history-navigation=0",
             "--no-first-run",
             "--no-default-browser-check",
         ]
-        create_desktop_shortcut(browser, f'--app={target_url} --kiosk --start-fullscreen')
+        create_desktop_shortcut(browser, f'--app={target_url} --user-data-dir="{user_data}" --start-maximized')
         subprocess.Popen(cmd)
     else:
         # Fallback to system browser
