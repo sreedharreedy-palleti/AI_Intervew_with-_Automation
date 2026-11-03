@@ -31,6 +31,17 @@ export const assignmentApi = {
   },
 
   /**
+   * Looks up candidate assignment token by email and unique exam code.
+   */
+  lookupAssignment: async ({ email, uniqueCode }) => {
+    const response = await apiClient.post('/api/v1/assignment/lookup', {
+      email,
+      unique_code: uniqueCode,
+    });
+    return response.data;
+  },
+
+  /**
    * Executes the candidate's code against public test cases and hidden test cases.
    */
   runTests: async (token, { questionId, code, language = 'python' }) => {

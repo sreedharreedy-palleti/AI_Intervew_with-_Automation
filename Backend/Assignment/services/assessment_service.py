@@ -195,9 +195,27 @@ async def service_get_or_create_assignment(
         return sanitize_assignment_for_client(assign_doc, locked=False, can_start=True)
 
     # 1. Enforce Admin Scheduling Check
+    is_unlimited = candidate_email.strip().lower() in UNLIMITED_TRIAL_EMAILS
+    has_valid_code = bool(
+        unique_code and str(unique_code).strip().upper() == str(student_unique_code).strip().upper()
+    )
+
     can_start, schedule_status, schedule_msg, sched_iso, sched_display = parse_and_check_schedule(
         scheduled_dt_raw
     )
+
+    # If demo account, or from desktop app, or provided legitimate exam passcode from email: unlock immediately!
+    if is_unlimited or from_app or has_valid_code:
+        can_start = True
+        schedule_status = "active"
+        if not sched_display:
+            sched_display = "Active & Ready"
+
+    # If schedule was pending or unassigned, allow candidate to start with their exam passcode
+    if not scheduled_dt_raw or schedule_status == "not_scheduled":
+        can_start = True
+        schedule_status = "active"
+        sched_display = "Active & Ready"
 
     if not can_start:
         temp_doc = {

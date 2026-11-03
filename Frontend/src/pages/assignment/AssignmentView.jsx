@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { assignmentApi } from '../../api/assignmentApi';
 import { API_BASE_URL } from '../../utils/constants';
 import { useAuth } from '../../hooks/useAuth';
@@ -39,6 +39,7 @@ import {
   AlertOctagon,
   Calendar,
   Download,
+  AlertCircle,
 } from 'lucide-react';
 import ChromeRequiredCard from '../../components/common/ChromeRequiredCard';
 import { checkIsGoogleChrome } from '../../utils/browserCheck';
@@ -94,23 +95,38 @@ int solution(int data) {
 };
 
 const AssignmentView = () => {
-  const { assignmentToken } = useParams();
+  const { assignmentToken: routeToken } = useParams();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const toast = useToast();
+
+  const isFromApp = searchParams.get('from_app') === 'true' || routeToken === 'app';
+  const [currentToken, setCurrentToken] = useState(
+    routeToken && routeToken !== 'app' ? routeToken : ''
+  );
+  const activeToken = currentToken || (routeToken && routeToken !== 'app' ? routeToken : '');
 
   const isUnlimitedTrial = Boolean(
     user?.email?.trim().toLowerCase() === '23091a32j4@rgmcet.edu.in'
   );
 
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(Boolean(activeToken && activeToken !== 'app'));
   const [loadError, setLoadError] = useState(null);
   const [assignment, setAssignment] = useState(null);
+
+  // Step 1: Candidate Details Entering state
+  const [isDetailsVerified, setIsDetailsVerified] = useState(false);
+  const [inputEmail, setInputEmail] = useState(user?.email || (isUnlimitedTrial ? '23091a32j4@rgmcet.edu.in' : ''));
+  const [inputCode, setInputCode] = useState('');
+  const [isVerifyingDetails, setIsVerifyingDetails] = useState(false);
+  const [detailsError, setDetailsError] = useState(null);
 
   const handleResetTrial = async () => {
     if (!window.confirm('Reset this coding assessment and start a fresh attempt (Unlimited Free Trial)?')) return;
     try {
       setIsLoading(true);
-      await assignmentApi.resetTrial(assignmentToken);
+      await assignmentApi.resetTrial(activeToken);
       toast.success('Assessment reset! Starting fresh attempt.');
       setSubmissionCompleted(false);
       setSubmissionReport(null);
@@ -152,7 +168,7 @@ const AssignmentView = () => {
   // Language selector
   const [selectedLanguage, setSelectedLanguage] = useState('python');
 
-  // Pre-exam Face & Audio verification
+  // Pre-exam Face & Audio verification (Step 2)
   const [isPrecheckVerified, setIsPrecheckVerified] = useState(false);
 
   // Proctoring / exam termination
@@ -191,48 +207,75 @@ const AssignmentView = () => {
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   };
 
+  // Helper to load assignment payload
+  const applyAssignmentData = useCallback((data) => {
+    setAssignment(data);
+    if (data.candidate_email && !inputEmail) {
+      setInputEmail(data.candidate_email);
+    }
+    if (data.duration_minutes) {
+      setTimeLeft(Number(data.duration_minutes) * 60);
+    }
+    if (data.verification_completed) {
+      setIsPrecheckVerified(true);
+      setIsDetailsVerified(true);
+    }
+
+    // Populate initial solutions from questions starter_code
+    const initialSolutions = {};
+    if (data.questions && data.questions.length > 0) {
+      data.questions.forEach((q) => {
+        initialSolutions[q.id] = q.starter_code || '';
+      });
+    }
+    setSolutions(initialSolutions);
+
+    // If already submitted in past
+    if (data.status === 'submitted') {
+      setSubmissionCompleted(true);
+      setSubmissionReport({
+        score: data.score,
+        status: data.status,
+        ai_review: data.ai_review,
+        submitted_at: data.submitted_at,
+      });
+    } else if (data.status === 'terminated_violation') {
+      setIsExamTerminated(true);
+      setTerminationReason(
+        data.termination_reason || 'Examination terminated due to security violations.'
+      );
+      setTerminationLogs(data.proctor_violation_history || data.proctor_logs || []);
+    }
+  }, [inputEmail]);
+
   // Fetch or generate assignment on mount
   useEffect(() => {
     let isMounted = true;
+    if (!activeToken || activeToken === 'app') {
+      setIsLoading(false);
+      return;
+    }
+
     const fetchAssignmentData = async () => {
       setIsLoading(true);
       setLoadError(null);
       try {
-        const data = await assignmentApi.getAssignment(assignmentToken);
+        const data = await assignmentApi.getAssignment(activeToken, {
+          username: inputEmail || user?.email,
+          fromApp: isFromApp,
+        });
         if (!isMounted) return;
 
-        setAssignment(data);
-        if (data.duration_minutes) {
-          setTimeLeft(Number(data.duration_minutes) * 60);
-        }
-        if (data.verification_completed) {
-          setIsPrecheckVerified(true);
-        }
+        applyAssignmentData(data);
 
-        // Populate initial solutions from questions starter_code
-        const initialSolutions = {};
-        if (data.questions && data.questions.length > 0) {
-          data.questions.forEach((q) => {
-            initialSolutions[q.id] = q.starter_code || '';
-          });
-        }
-        setSolutions(initialSolutions);
-
-        // If already submitted in past
-        if (data.status === 'submitted') {
-          setSubmissionCompleted(true);
-          setSubmissionReport({
-            score: data.score,
-            status: data.status,
-            ai_review: data.ai_review,
-            submitted_at: data.submitted_at,
-          });
-        } else if (data.status === 'terminated_violation') {
-          setIsExamTerminated(true);
-          setTerminationReason(
-            data.termination_reason || 'Examination terminated due to security violations.'
-          );
-          setTerminationLogs(data.proctor_violation_history || data.proctor_logs || []);
+        // If user already logged in with matching email or demo account, mark details verified
+        if (
+          user?.email &&
+          data.candidate_email &&
+          user.email.trim().toLowerCase() === data.candidate_email.trim().toLowerCase() &&
+          !data.locked
+        ) {
+          setIsDetailsVerified(true);
         }
       } catch (err) {
         if (!isMounted) return;
@@ -246,7 +289,66 @@ const AssignmentView = () => {
     return () => {
       isMounted = false;
     };
-  }, [assignmentToken]);
+  }, [activeToken, isFromApp, user?.email, applyAssignmentData]);
+
+  // Step 1 Submission: Candidate Details Verification
+  const handleVerifyDetails = async (e) => {
+    if (e) e.preventDefault();
+    const emailToVerify = (inputEmail || user?.email || '').trim().toLowerCase();
+    const codeToVerify = inputCode.trim().toUpperCase();
+
+    if (!emailToVerify) {
+      setDetailsError('Please enter your registered candidate email address.');
+      return;
+    }
+    if (!codeToVerify) {
+      setDetailsError('Please enter your Unique Exam Code from your invitation email.');
+      return;
+    }
+
+    setIsVerifyingDetails(true);
+    setDetailsError(null);
+
+    try {
+      let resolvedToken = activeToken;
+
+      // If we don't have a valid token yet (e.g. desktop app entry via /assignment/app)
+      if (!resolvedToken || resolvedToken === 'app') {
+        const lookupRes = await assignmentApi.lookupAssignment({
+          email: emailToVerify,
+          uniqueCode: codeToVerify,
+        });
+        resolvedToken = lookupRes.assignment_token;
+        setCurrentToken(resolvedToken);
+      }
+
+      // Verify access credentials and unlock exam
+      await assignmentApi.verifyAccess(resolvedToken, {
+        username: emailToVerify,
+        uniqueCode: codeToVerify,
+        fromApp: isFromApp,
+      });
+
+      // Fetch active assessment with generated questions
+      const data = await assignmentApi.getAssignment(resolvedToken, {
+        username: emailToVerify,
+        uniqueCode: codeToVerify,
+        fromApp: isFromApp,
+      });
+
+      applyAssignmentData(data);
+      setIsDetailsVerified(true);
+      toast.success('Credentials verified successfully! Please complete device check.');
+    } catch (err) {
+      const errorMsg =
+        err.response?.data?.detail ||
+        err.message ||
+        'Access Denied: The Email or Unique Exam Code does not match the invitation record.';
+      setDetailsError(errorMsg);
+    } finally {
+      setIsVerifyingDetails(false);
+    }
+  };
 
   // Countdown timer effect
   useEffect(() => {
@@ -362,7 +464,7 @@ const AssignmentView = () => {
     setIsRunningTests(true);
     setActiveConsoleTab('tests');
     try {
-      const res = await assignmentApi.runTests(assignmentToken, {
+      const res = await assignmentApi.runTests(activeToken, {
         questionId: activeQuestion.id,
         code: activeCode,
         language: selectedLanguage,
@@ -399,7 +501,7 @@ const AssignmentView = () => {
         language: selectedLanguage,
       }));
 
-      const res = await assignmentApi.submitAssignment(assignmentToken, submissions);
+      const res = await assignmentApi.submitAssignment(activeToken, submissions);
       setSubmissionReport(res);
       setSubmissionCompleted(true);
       setShowSubmitModal(false);
@@ -411,8 +513,8 @@ const AssignmentView = () => {
     }
   };
 
-  // BROWSER RESTRICTION: GOOGLE CHROME ONLY
-  if (!browserState.isChrome) {
+  // BROWSER RESTRICTION: GOOGLE CHROME ONLY (Bypassed when running in desktop app)
+  if (!browserState.isChrome && !isFromApp) {
     return (
       <ChromeRequiredCard
         currentBrowser={browserState.currentBrowser}
@@ -447,104 +549,6 @@ const AssignmentView = () => {
       </div>
     );
   }
-
-  // LOCKED VIEW: CANDIDATE VERIFICATION (ONLINE CHROME ENVIRONMENT)
-  if (assignment?.locked) {
-    // 1. If Admin has NOT scheduled the assignment yet
-    if (assignment.schedule_status === 'not_scheduled') {
-      return (
-        <div className="assignment-container" style={{ maxWidth: '640px', marginTop: '3rem' }}>
-          <Card elevated style={{ padding: '2.5rem', border: '1px solid rgba(245, 158, 11, 0.4)', background: 'rgba(15, 23, 42, 0.9)', textAlign: 'center' }}>
-            <div style={{ width: '64px', height: '64px', borderRadius: '16px', background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', display: 'grid', placeItems: 'center', margin: '0 auto 1.25rem', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
-              <Clock size={32} />
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-              <Badge variant="warning">Interview Schedule Pending</Badge>
-              <Badge variant="primary">{assignment.course_title || 'Course Track'}</Badge>
-            </div>
-            <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.75rem', color: '#f8fafc' }}>
-              Assessment Date Not Assigned Yet
-            </h1>
-            <p style={{ color: '#cbd5e1', fontSize: '0.92rem', lineHeight: 1.6, maxWidth: '520px', margin: '0 auto 1.75rem' }}>
-              Your application has been received and shortlisted! Technical assessments can only be started at the official date and time scheduled by the admissions team.
-            </p>
-
-            <div style={{ background: 'rgba(255, 255, 255, 0.03)', borderRadius: '10px', padding: '1rem', border: '1px solid rgba(255, 255, 255, 0.08)', marginBottom: '1.75rem', textAlign: 'left', fontSize: '0.85rem', color: '#94a3b8' }}>
-              <div style={{ marginBottom: '6px' }}><strong style={{ color: '#fff' }}>Candidate:</strong> {assignment.candidate_name || 'Candidate'}</div>
-              <div style={{ marginBottom: '6px' }}><strong style={{ color: '#fff' }}>Course Track:</strong> {assignment.course_title}</div>
-              <div><strong style={{ color: '#fff' }}>Next Step:</strong> You will receive an official email invitation once the administrator sets your interview date and duration.</div>
-            </div>
-
-            <Link to="/my-courses" className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
-              <span>Return to My Applications</span>
-              <ArrowRight size={16} />
-            </Link>
-          </Card>
-        </div>
-      );
-    }
-
-    // 2. If Admin scheduled the assignment for the FUTURE (Time not arrived yet)
-    return (
-      <div className="assignment-container" style={{ maxWidth: '640px', marginTop: '3rem' }}>
-        <Card elevated style={{ padding: '2.5rem', border: '1px solid rgba(56, 189, 248, 0.4)', background: 'rgba(15, 23, 42, 0.9)', textAlign: 'center' }}>
-          <div style={{ width: '64px', height: '64px', borderRadius: '16px', background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', display: 'grid', placeItems: 'center', margin: '0 auto 1.25rem', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
-            <Calendar size={32} />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-            <Badge variant="primary">Scheduled Interview</Badge>
-            <Badge variant="success">Google Chrome Required</Badge>
-          </div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.75rem', color: '#f8fafc' }}>
-            Your Technical Assessment is Scheduled
-          </h1>
-          <p style={{ color: '#cbd5e1', fontSize: '0.92rem', lineHeight: 1.6, maxWidth: '520px', margin: '0 auto 1.5rem' }}>
-            The administrator has scheduled your technical coding interview. The examination room will unlock automatically at your scheduled start time.
-          </p>
-
-          {/* Schedule Details Card */}
-          <div style={{ background: 'rgba(56, 189, 248, 0.06)', borderRadius: '12px', padding: '1.25rem', border: '1px solid rgba(56, 189, 248, 0.25)', marginBottom: '1.5rem', textAlign: 'left' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '1rem', fontSize: '0.85rem' }}>
-              <div>
-                <span style={{ color: '#94a3b8', display: 'block', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Scheduled Start Time</span>
-                <strong style={{ color: '#38bdf8', fontSize: '0.95rem' }}>{assignment.scheduled_datetime_display || assignment.assignment_datetime}</strong>
-              </div>
-              <div>
-                <span style={{ color: '#94a3b8', display: 'block', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Allocated Duration</span>
-                <strong style={{ color: '#34d399', fontSize: '0.95rem' }}>{assignment.duration_minutes || 60} Minutes</strong>
-              </div>
-            </div>
-          </div>
-
-          {/* Live Countdown Clock */}
-          <div style={{ background: 'rgba(0, 0, 0, 0.4)', borderRadius: '12px', padding: '1.25rem', border: '1px solid rgba(255, 255, 255, 0.1)', marginBottom: '1.75rem' }}>
-            <div style={{ color: '#94a3b8', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>
-              Room Unlocks In
-            </div>
-            <div style={{ fontFamily: 'monospace', fontSize: '2rem', fontWeight: 800, color: '#f8fafc', letterSpacing: '2px' }}>
-              {formatScheduleDiff(scheduleCountdown)}
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
-            <Link to="/my-courses" className="btn btn-secondary" style={{ textDecoration: 'none' }}>
-              <span>View My Applications</span>
-            </Link>
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-              className="btn btn-primary"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-            >
-              <RotateCcw size={14} />
-              <span>Refresh Status</span>
-            </button>
-          </div>
-        </Card>
-      </div>
-    );
-  }
-
 
   // SUBMISSION COMPLETED VIEW
   if (submissionCompleted && submissionReport) {
@@ -733,7 +737,7 @@ const AssignmentView = () => {
           <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '2rem', flexWrap: 'wrap' }}>
             {isSelectedForInterview && (
               <Link
-                to={`/interview/start?assignment_token=${assignmentToken}`}
+                to={`/interview/start?assignment_token=${activeToken}`}
                 className="btn btn-primary"
                 style={{
                   background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
@@ -993,9 +997,9 @@ const AssignmentView = () => {
             <div>
               Assessment Result: <strong style={{ color: '#f87171' }}>Disqualified (Score: 0.0%)</strong> ? Status: <strong style={{ color: '#fca5a5' }}>Terminated (Proctoring Violation)</strong>
             </div>
-            {assignmentToken && (
+            {activeToken && (
               <div style={{ marginTop: '0.25rem', fontSize: '0.78rem', color: '#64748b' }}>
-                Incident Reference Token: {assignmentToken}
+                Incident Reference Token: {activeToken}
               </div>
             )}
           </div>
@@ -1014,12 +1018,203 @@ const AssignmentView = () => {
     );
   }
 
-  // PRE-EXAM VERIFICATION VIEW: FACE & AUDIO CHECK BEFORE OPENING CODE EDITOR
-  if (!isPrecheckVerified && !assignment?.locked && !submissionCompleted) {
+  // STEP 1: CANDIDATE DETAILS ENTERING (SINGLE UNIFIED APPLICATION)
+  if (!isDetailsVerified && !submissionCompleted && !isExamTerminated) {
+    return (
+      <div className="assignment-container" style={{ maxWidth: '640px', marginTop: '2.5rem' }}>
+        <Card
+          elevated
+          style={{
+            padding: '2.5rem',
+            border: '1px solid rgba(99, 102, 241, 0.4)',
+            background: 'rgba(15, 23, 42, 0.95)',
+            boxShadow: '0 20px 45px rgba(0, 0, 0, 0.5)',
+            textAlign: 'center',
+          }}
+        >
+          {/* Progress Header */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '1.25rem',
+            }}
+          >
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <Badge variant="primary">Step 1 of 3: Details Entry</Badge>
+              {isFromApp && <Badge variant="success">Desktop Application</Badge>}
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '0.8rem',
+                color: '#94a3b8',
+              }}
+            >
+              <ShieldCheck size={16} color="#10b981" />
+              <span>Proctored Environment</span>
+            </div>
+          </div>
+
+          {/* Hero Icon & Title */}
+          <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
+            <div
+              style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '16px',
+                background: 'rgba(99, 102, 241, 0.15)',
+                color: '#818cf8',
+                display: 'grid',
+                placeItems: 'center',
+                margin: '0 auto 1.25rem',
+                border: '1px solid rgba(99, 102, 241, 0.35)',
+              }}
+            >
+              <KeyRound size={32} />
+            </div>
+            <h1 style={{ fontSize: '1.85rem', fontWeight: 800, color: '#f8fafc', marginBottom: '0.5rem' }}>
+              Candidate Verification
+            </h1>
+            <p style={{ color: '#94a3b8', fontSize: '0.92rem', lineHeight: 1.6, maxWidth: '480px', margin: '0 auto' }}>
+              Please enter your registered candidate email and Unique Exam Code to start your technical assessment.
+            </p>
+          </div>
+
+          {detailsError && (
+            <div
+              style={{
+                background: 'rgba(239, 68, 68, 0.12)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: '10px',
+                padding: '0.85rem 1rem',
+                marginBottom: '1.25rem',
+                color: '#fca5a5',
+                fontSize: '0.88rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                textAlign: 'left',
+              }}
+            >
+              <AlertCircle size={18} style={{ flexShrink: 0 }} />
+              <span>{detailsError}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleVerifyDetails} style={{ textAlign: 'left' }}>
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
+                Candidate Email Address
+              </label>
+              <input
+                type="email"
+                value={inputEmail}
+                onChange={(e) => setInputEmail(e.target.value)}
+                placeholder="candidate@example.com"
+                required
+                style={{
+                  width: '100%',
+                  padding: '0.8rem 1rem',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  background: 'rgba(15, 23, 42, 0.7)',
+                  color: '#fff',
+                  fontSize: '0.95rem',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '1.75rem' }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
+                Unique Exam Code
+              </label>
+              <input
+                type="text"
+                value={inputCode}
+                onChange={(e) => setInputCode(e.target.value.toUpperCase())}
+                placeholder="e.g. EXAM-XXXXXX"
+                required
+                style={{
+                  width: '100%',
+                  padding: '0.8rem 1rem',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  background: 'rgba(15, 23, 42, 0.7)',
+                  color: '#fff',
+                  fontSize: '0.95rem',
+                  letterSpacing: '1.5px',
+                  textTransform: 'uppercase',
+                  fontWeight: 600,
+                  boxSizing: 'border-box',
+                }}
+              />
+              <span style={{ display: 'block', marginTop: '6px', fontSize: '0.78rem', color: '#64748b' }}>
+                Enter the passcode from your shortlist invitation email or candidate dashboard.
+              </span>
+            </div>
+
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={isVerifyingDetails}
+              style={{
+                width: '100%',
+                padding: '0.9rem',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '1rem',
+                fontWeight: 700,
+              }}
+            >
+              {isVerifyingDetails ? (
+                <span>Verifying Credentials...</span>
+              ) : (
+                <>
+                  <span>Verify Details & Continue</span>
+                  <ArrowRight size={18} />
+                </>
+              )}
+            </Button>
+          </form>
+
+          {/* Stepper Footer */}
+          <div
+            style={{
+              marginTop: '1.75rem',
+              paddingTop: '1.25rem',
+              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              fontSize: '0.8rem',
+              color: '#64748b',
+              flexWrap: 'wrap',
+              gap: '0.5rem',
+            }}
+          >
+            <span>Flow: 1. Details Entry → 2. Camera & Audio Check → 3. Coding Exam</span>
+            {isUnlimitedTrial && (
+              <span style={{ color: '#10b981', fontWeight: 600 }}>Unlimited Free Trial Account</span>
+            )}
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  // STEP 2: PRE-EXAM VERIFICATION (CAMERA & VOICE CHECK)
+  if (!isPrecheckVerified && !submissionCompleted && !isExamTerminated) {
     return (
       <div className="assignment-container">
         <PreExamVerification
-          assignmentToken={assignmentToken}
+          assignmentToken={activeToken}
           candidateName={assignment?.candidate_name}
           courseTitle={assignment?.course_title}
           onVerificationComplete={() => {
@@ -1524,7 +1719,7 @@ const AssignmentView = () => {
       {/* Live AI Proctoring Feed */}
       {!submissionCompleted && !isExamTerminated && assignment && !assignment.locked && (
         <LiveProctoringFeed
-          assignmentToken={assignmentToken}
+          assignmentToken={activeToken}
           isActive={!submissionCompleted && !isExamTerminated}
           onWarning={handleProctoringWarning}
           onTerminate={handleProctoringTerminate}

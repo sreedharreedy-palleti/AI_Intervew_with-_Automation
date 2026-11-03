@@ -93,6 +93,8 @@ const AppRouter = () => {
         />
 
         {/* Shortlisted Assignment Route */}
+        <Route path="/assignment" element={<AssignmentView />} />
+        <Route path="/assignment/app" element={<AssignmentView />} />
         <Route path="/assignment/:assignmentToken" element={<AssignmentView />} />
         
         {/* Stage 2 AI Technical Interview Route */}
