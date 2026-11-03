@@ -1,17 +1,20 @@
-# AI Assignment Desktop Application (`assignment_app`)
+# AI Assignment Desktop Application (`Backend/assignment_app`)
 
-The dedicated Windows client application for the **HirePulse AI Coding Assessment Platform**.
+The unified assignment module and dedicated Windows client application for the **HirePulse AI Coding Assessment Platform**.
 
 ## Folder Structure
 
 ```
-assignment_app/
-├── app/                        # Application Source Code
+Backend/assignment_app/
+├── app/                        # Dedicated Desktop Client Application Source
 │   ├── __init__.py             # Package initializer
 │   ├── main.py                 # Application entry point
 │   ├── config.py               # URLs, paths, and security flags
 │   ├── browser_launcher.py     # Chromium launcher (--app & --user-data-dir mode)
 │   └── shortcut_creator.py     # Desktop shortcut (.lnk) utility
+├── routes/                     # FastAPI Router Endpoints (access, assessment, execution, submission, etc.)
+├── schemas/                    # Pydantic schemas and models
+├── services/                   # Business logic, Gemini AI generator, YOLO proctoring, test runner
 ├── dist/                       # Output directory for compiled binaries
 │   └── AIAssignmentSetup.exe   # Standalone Windows executable
 ├── build_app.py                # Automated PyInstaller build script
@@ -35,12 +38,12 @@ assignment_app/
 ## Building the Executable
 
 ### Option 1: 1-Click Batch Script
-Double-click `build_app.bat` in Windows Explorer.
+Double-click `build_app.bat` inside `Backend\assignment_app` in Windows Explorer.
 
 ### Option 2: Python Script
 ```powershell
-python build_app.py
+cd Backend/assignment_app
+py build_app.py
 ```
 
-The compiled binary is automatically output to `assignment_app/dist/AIAssignmentSetup.exe` and copied to `Backend/static/downloads/AIAssignmentSetup.exe` for candidate downloads.
-
+The compiled binary is automatically output to `Backend/assignment_app/dist/AIAssignmentSetup.exe` and copied to `Backend/static/downloads/AIAssignmentSetup.exe` for candidate downloads.
