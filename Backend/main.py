@@ -23,14 +23,14 @@ from database import connect_to_mongo, close_mongo_connection, get_database
 from auth.routes import auth_router
 from Admin.routes import admin_router
 from Users.routes import users_router
-from Assignment.routes import assignment_router
+from assignment_app.routes import assignment_router
 from Intervew.routes import interview_router
 from Chatbot.routes import chatbot_router
 from Users.services.resume_storage_service import (
     migrate_disk_resumes_to_mongo,
     service_get_resume_file,
 )
-from Assignment.routes.portal_routes import download_assignment_app
+from assignment_app.routes.portal_routes import download_assignment_app
 
 
 @asynccontextmanager

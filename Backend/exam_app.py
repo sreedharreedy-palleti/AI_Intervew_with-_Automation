@@ -1,115 +1,34 @@
 """
-AI Technical Assessment - Dedicated Desktop Client Launcher
-Launches the single unified AI Assignment application window without separate launcher windows:
-Step 1: Details Entering (Candidate Email & Unique Exam Code)
-Step 2: Normal Camera & Voice Checking
-Step 3: AI Coding Assessment Simulation
+AI Technical Assessment - Dedicated Desktop Client Launcher.
+Delegates directly to assignment_app.app.main
+Step 1: Login Gmail & Code
+Step 2: Camera & Voice Access
+Step 3: AI Assignment Workspace
 """
 
-import sys
 import os
-import subprocess
-import webbrowser
+import sys
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
 
-def find_browser():
-    """Finds Chrome or Edge executable on Windows."""
-    paths = [
-        # Chrome paths
-        os.path.expandvars(r"%ProgramFiles%\Google\Chrome\Application\chrome.exe"),
-        os.path.expandvars(r"%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe"),
-        os.path.expandvars(r"%LocalAppData%\Google\Chrome\Application\chrome.exe"),
-        # Edge paths (Installed on all Windows 10 & 11)
-        os.path.expandvars(r"%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe"),
-        os.path.expandvars(r"%ProgramFiles%\Microsoft\Edge\Application\msedge.exe"),
-        os.path.expandvars(r"%LocalAppData%\Microsoft\Edge\Application\msedge.exe"),
-    ]
-    for p in paths:
-        if os.path.exists(p):
-            return p
-    return None
-
-
-def create_desktop_shortcut(target_exe, target_args):
-    """Creates a desktop shortcut for the candidate to re-open the exam."""
+try:
+    from assignment_app.app.main import main
+except ImportError:
     try:
-        desktop = os.path.join(os.path.expanduser("~"), "Desktop")
-        if not os.path.exists(desktop):
-            return
+        from app.main import main
+    except ImportError:
+        # Fallback to local launcher if standalone
+        import subprocess
+        import webbrowser
 
-        shortcut_vbs = os.path.join(desktop, "_temp_exam_shortcut.vbs")
-        shortcut_path = os.path.join(desktop, "AI Coding Assessment.lnk")
-
-        script = f"""
-Set oWS = WScript.CreateObject("WScript.Shell")
-sLinkFile = "{shortcut_path}"
-Set oLink = oWS.CreateShortcut(sLinkFile)
-oLink.TargetPath = "{target_exe}"
-oLink.Arguments = "{target_args}"
-oLink.Description = "AI Coding Assessment"
-oLink.Save
-"""
-        with open(shortcut_vbs, "w") as f:
-            f.write(script)
-
-        subprocess.run(["cscript", "//nologo", shortcut_vbs], check=True, creationflags=0x08000000 if hasattr(subprocess, "CREATE_NO_WINDOW") else 0)
-        if os.path.exists(shortcut_vbs):
-            os.remove(shortcut_vbs)
-    except Exception:
-        pass
-
-
-def main():
-    try:
-        # Prefer structured assignment_app package when available
-        root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-        if root_dir not in sys.path:
-            sys.path.insert(0, root_dir)
-        from assignment_app.app.main import main as app_main
-        return app_main()
-    except Exception:
-        pass
-
-    base_url = os.getenv("FRONTEND_URL", "http://localhost:5173").rstrip("/")
-    token = ""
-
-    # Parse command line argument if token passed
-    if len(sys.argv) > 1:
-        for i, arg in enumerate(sys.argv):
-            if arg in ("--token", "-t") and i + 1 < len(sys.argv):
-                token = sys.argv[i + 1]
-            elif not arg.startswith("-") and len(arg) > 6:
-                token = arg
-
-    if token and token not in ("app", "portal", "direct"):
-        target_url = f"{base_url}/assignment/{token}?from_app=true"
-    else:
-        target_url = f"{base_url}/assignment/app?from_app=true"
-
-    browser = find_browser()
-
-    if browser:
-        # Launch directly in dedicated single application window mode
-        user_data = os.path.join(os.path.expandvars(r"%TEMP%"), "HirePulseExamProfile")
-        cmd = [
-            browser,
-            f"--app={target_url}",
-            f"--user-data-dir={user_data}",
-            "--start-maximized",
-            "--disable-pinch",
-            "--overscroll-history-navigation=0",
-            "--no-first-run",
-            "--no-default-browser-check",
-        ]
-        create_desktop_shortcut(browser, f'--app={target_url} --user-data-dir="{user_data}" --start-maximized')
-        subprocess.Popen(cmd)
-    else:
-        # Fallback to system browser
-        webbrowser.open(target_url)
-
-    # Immediately exit launcher process so no second app or feather icon remains in taskbar
-    sys.exit(0)
-
+        def main():
+            base_url = os.environ.get("FRONTEND_URL", "http://localhost:5173")
+            token = sys.argv[1] if len(sys.argv) > 1 and not sys.argv[1].startswith("-") else ""
+            target_url = f"{base_url}/assignment/{token}?from_app=true" if token else f"{base_url}/assignment/app?from_app=true"
+            webbrowser.open(target_url)
+            sys.exit(0)
 
 if __name__ == "__main__":
     main()

@@ -43,3 +43,4 @@ python build_app.py
 ```
 
 The compiled binary is automatically output to `assignment_app/dist/AIAssignmentSetup.exe` and copied to `Backend/static/downloads/AIAssignmentSetup.exe` for candidate downloads.
+

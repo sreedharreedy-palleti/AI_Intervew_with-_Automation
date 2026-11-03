@@ -34,3 +34,4 @@ SECURE_FLAGS = [
     "--no-default-browser-check",
     "--disable-features=TranslateUI",
 ]
+

@@ -14,3 +14,4 @@ if %ERRORLEVEL% equ 0 (
     echo [ERROR] Build failed. Please ensure pyinstaller is installed.
 )
 pause
+

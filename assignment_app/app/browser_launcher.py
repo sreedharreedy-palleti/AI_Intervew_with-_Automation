@@ -45,3 +45,4 @@ def launch_assessment_window(target_url: str) -> None:
     else:
         # Fallback to standard system browser
         webbrowser.open(target_url)
+

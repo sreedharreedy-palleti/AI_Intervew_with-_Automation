@@ -8,7 +8,7 @@ from Intervew.schemas.proctor_schemas import (
     InterviewProctorFrameRequest,
     InterviewProctorFrameResponse,
 )
-from Assignment.services.yolo_proctor_service import (
+from assignment_app.services.yolo_proctor_service import (
     run_yolo_deep_learning_analysis,
     analyze_audio_deep_learning,
 )

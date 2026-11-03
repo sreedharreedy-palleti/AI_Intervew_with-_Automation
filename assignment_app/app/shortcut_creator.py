@@ -38,3 +38,4 @@ oLink.Save
         return True
     except Exception:
         return False
+
