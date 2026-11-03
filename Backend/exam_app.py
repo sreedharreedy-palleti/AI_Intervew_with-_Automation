@@ -60,6 +60,16 @@ oLink.Save
 
 
 def main():
+    try:
+        # Prefer structured assignment_app package when available
+        root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+        if root_dir not in sys.path:
+            sys.path.insert(0, root_dir)
+        from assignment_app.app.main import main as app_main
+        return app_main()
+    except Exception:
+        pass
+
     base_url = os.getenv("FRONTEND_URL", "http://localhost:5173").rstrip("/")
     token = ""
 
