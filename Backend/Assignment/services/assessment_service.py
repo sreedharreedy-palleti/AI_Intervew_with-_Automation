@@ -192,8 +192,14 @@ async def service_get_or_create_assignment(
 
     # 1. Enforce Admin Scheduling Check
     is_unlimited = candidate_email.strip().lower() in UNLIMITED_TRIAL_EMAILS
+    def _clean_code(c: str) -> str:
+        return str(c).strip().upper().replace("EXAM-", "").replace("EXAM", "").replace("-", "")
+
     has_valid_code = bool(
-        unique_code and str(unique_code).strip().upper() == str(student_unique_code).strip().upper()
+        unique_code and (
+            str(unique_code).strip().upper() == str(student_unique_code).strip().upper()
+            or _clean_code(unique_code) == _clean_code(student_unique_code)
+        )
     )
 
     # If assignment is already submitted, candidate can view the report
