@@ -721,7 +721,7 @@ const PreExamVerification = ({
             </>
           ) : (
             <>
-              <span>Complete Verification & Open Coding Exam</span>
+              <span>Allow Camera & Voice Access — Start AI Assignment</span>
               <ArrowRight size={20} />
             </>
           )}

@@ -279,8 +279,8 @@ const AssignmentView = () => {
     if (data.duration_minutes) {
       setTimeLeft(Number(data.duration_minutes) * 60);
     }
+    // Camera & Voice access is always required for active assessment session
     if (data.verification_completed) {
-      setIsPrecheckVerified(true);
       setIsDetailsVerified(true);
     }
 
@@ -401,7 +401,8 @@ const AssignmentView = () => {
 
       applyAssignmentData(data);
       setIsDetailsVerified(true);
-      toast.success('Credentials verified successfully! Please complete device check.');
+      setIsPrecheckVerified(false); // ALWAYS require Camera & Voice Access verification before opening AI assignment
+      toast.success('Gmail & Exam Code verified! Please grant Camera and Voice access.');
     } catch (err) {
       const errorMsg =
         err.response?.data?.detail ||
@@ -1136,7 +1137,7 @@ const AssignmentView = () => {
             }}
           >
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              <Badge variant="primary">Step 1 of 3: Details Entry</Badge>
+              <Badge variant="primary">Step 1 of 2: Login Gmail & Code</Badge>
               {isFromApp && <Badge variant="success">Desktop Application</Badge>}
             </div>
             <div
@@ -1171,10 +1172,10 @@ const AssignmentView = () => {
               <KeyRound size={32} />
             </div>
             <h1 style={{ fontSize: '1.85rem', fontWeight: 800, color: '#f8fafc', marginBottom: '0.5rem' }}>
-              Candidate Verification
+              Candidate Login
             </h1>
             <p style={{ color: '#94a3b8', fontSize: '0.92rem', lineHeight: 1.6, maxWidth: '480px', margin: '0 auto' }}>
-              Please enter your registered candidate email and Unique Exam Code to start your technical assessment.
+              Please enter your registered Gmail and Unique Exam Code. Next, you will grant Camera & Voice access before the AI Assignment opens.
             </p>
           </div>
 
@@ -1271,7 +1272,7 @@ const AssignmentView = () => {
                 <span>Verifying Credentials...</span>
               ) : (
                 <>
-                  <span>Verify Details & Continue</span>
+                  <span>Verify & Proceed to Camera & Voice Access</span>
                   <ArrowRight size={18} />
                 </>
               )}
@@ -1293,7 +1294,7 @@ const AssignmentView = () => {
               gap: '0.5rem',
             }}
           >
-            <span>Flow: 1. Details Entry → 2. Camera & Audio Check → 3. Coding Exam</span>
+            <span>Flow: 1. Login Gmail & Code → 2. Camera & Voice Access → 3. AI Assignment</span>
             {isUnlimitedTrial && (
               <span style={{ color: '#10b981', fontWeight: 600 }}>Unlimited Free Trial Account</span>
             )}
