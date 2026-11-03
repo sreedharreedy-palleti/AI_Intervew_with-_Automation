@@ -176,6 +176,69 @@ const AssignmentView = () => {
   const [terminationReason, setTerminationReason] = useState('');
   const [terminationLogs, setTerminationLogs] = useState([]);
 
+  // Fullscreen & Screen Lock State
+  const [screenLockWarning, setScreenLockWarning] = useState(false);
+
+  const enterFullscreen = useCallback(() => {
+    try {
+      const el = document.documentElement;
+      if (el.requestFullscreen) {
+        el.requestFullscreen().catch(() => {});
+      } else if (el.webkitRequestFullscreen) {
+        el.webkitRequestFullscreen();
+      } else if (el.msRequestFullscreen) {
+        el.msRequestFullscreen();
+      }
+    } catch (e) {
+      console.warn('Fullscreen request failed:', e);
+    }
+  }, []);
+
+  // Monitor fullscreen & screen-locking enforcement
+  useEffect(() => {
+    if (!isDetailsVerified || submissionCompleted || isExamTerminated) return;
+
+    // Attempt automatic fullscreen upon credential verification
+    enterFullscreen();
+
+    const handleFullscreenChange = () => {
+      const isFull = Boolean(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement);
+      if (!isFull) {
+        setScreenLockWarning(true);
+      } else {
+        setScreenLockWarning(false);
+      }
+    };
+
+    const handleKeyDownProtection = (e) => {
+      // Block F11, F12 (devtools), Ctrl+Shift+I/J/C, Ctrl+U (source), Ctrl+R (reload)
+      if (
+        e.key === 'F11' ||
+        e.key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j' || e.key === 'C' || e.key === 'c')) ||
+        (e.ctrlKey && (e.key === 'u' || e.key === 'U' || e.key === 'r' || e.key === 'R'))
+      ) {
+        e.preventDefault();
+      }
+    };
+
+    const handleContextMenu = (e) => {
+      e.preventDefault();
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    window.addEventListener('keydown', handleKeyDownProtection);
+    window.addEventListener('contextmenu', handleContextMenu);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      window.removeEventListener('keydown', handleKeyDownProtection);
+      window.removeEventListener('contextmenu', handleContextMenu);
+    };
+  }, [isDetailsVerified, submissionCompleted, isExamTerminated, enterFullscreen]);
+
   // Browser restriction state (Google Chrome only)
   const [browserState, setBrowserState] = useState(() => checkIsGoogleChrome());
 
@@ -1229,6 +1292,79 @@ const AssignmentView = () => {
   // ACTIVE INTERVIEW & CODING WORKSPACE
   return (
     <div className="assignment-container">
+      {/* Screen Lock Security Overlay */}
+      {screenLockWarning && isDetailsVerified && !submissionCompleted && !isExamTerminated && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(10, 15, 30, 0.98)',
+            zIndex: 9999999,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
+            padding: '2rem',
+            backdropFilter: 'blur(10px)',
+          }}
+        >
+          <div
+            style={{
+              width: '80px',
+              height: '80px',
+              borderRadius: '24px',
+              background: 'rgba(239, 68, 68, 0.15)',
+              border: '2px solid rgba(239, 68, 68, 0.4)',
+              color: '#f87171',
+              display: 'grid',
+              placeItems: 'center',
+              marginBottom: '1.75rem',
+            }}
+          >
+            <Lock size={40} />
+          </div>
+
+          <Badge variant="danger" style={{ marginBottom: '1rem', fontSize: '0.9rem', padding: '0.4rem 1rem' }}>
+            SECURITY LOCK ACTIVATED
+          </Badge>
+
+          <h1 style={{ color: '#fff', fontSize: '2.2rem', fontWeight: 800, marginBottom: '0.75rem' }}>
+            Assessment Screen Locked
+          </h1>
+
+          <p style={{ color: '#94a3b8', fontSize: '1.05rem', maxWidth: '560px', lineHeight: 1.6, marginBottom: '2rem' }}>
+            Full-screen locked mode is strictly required to maintain assessment integrity. Exiting full-screen or switching windows triggers proctoring violation alerts.
+          </p>
+
+          <Button
+            type="button"
+            variant="primary"
+            onClick={() => {
+              enterFullscreen();
+              setScreenLockWarning(false);
+            }}
+            style={{
+              padding: '1rem 2.5rem',
+              fontSize: '1.1rem',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+              boxShadow: '0 8px 24px rgba(99, 102, 241, 0.4)',
+            }}
+          >
+            <ShieldCheck size={22} />
+            <span>Unlock Screen & Return to Assessment</span>
+          </Button>
+
+          <span style={{ display: 'block', marginTop: '1.5rem', fontSize: '0.85rem', color: '#64748b' }}>
+            All window focus changes and screen unlocks are permanently recorded.
+          </span>
+        </div>
+      )}
+
       {/* Top Header Bar */}
       <div className="assignment-header">
         <div className="assignment-meta-left">

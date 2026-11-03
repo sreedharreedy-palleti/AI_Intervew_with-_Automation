@@ -91,19 +91,17 @@ const AppRouter = () => {
             </ProtectedRoute>
           }
         />
-
-        {/* Shortlisted Assignment Route */}
-        <Route path="/assignment" element={<AssignmentView />} />
-        <Route path="/assignment/app" element={<AssignmentView />} />
-        <Route path="/assignment/:assignmentToken" element={<AssignmentView />} />
-        
-        {/* Stage 2 AI Technical Interview Route */}
-        <Route path="/interview/:interviewToken" element={<InterviewView />} />
         <Route path="/download-app" element={<Navigate to="/courses" replace />} />
 
         {/* 404 inside MainLayout */}
         <Route path="/404" element={<NotFound />} />
       </Route>
+
+      {/* Dedicated Locked Proctored Examination Routes (Standalone - No Navbar, No Chatbot) */}
+      <Route path="/assignment" element={<AssignmentView />} />
+      <Route path="/assignment/app" element={<AssignmentView />} />
+      <Route path="/assignment/:assignmentToken" element={<AssignmentView />} />
+      <Route path="/interview/:interviewToken" element={<InterviewView />} />
 
       {/* Admin Portal Experience (with Sidebar & Topbar) */}
       <Route

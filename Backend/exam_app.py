@@ -79,10 +79,19 @@ def main():
     browser = find_browser()
 
     if browser:
-        # Launch directly in dedicated application mode (single window, no browser tabs/URL bar)
-        app_arg = f'--app={target_url}'
-        create_desktop_shortcut(browser, f'{app_arg} --start-maximized')
-        subprocess.Popen([browser, app_arg, "--start-maximized"])
+        # Launch directly in locked kiosk application mode (full screen, hides taskbar & window controls)
+        cmd = [
+            browser,
+            f"--app={target_url}",
+            "--kiosk",
+            "--start-fullscreen",
+            "--disable-pinch",
+            "--overscroll-history-navigation=0",
+            "--no-first-run",
+            "--no-default-browser-check",
+        ]
+        create_desktop_shortcut(browser, f'--app={target_url} --kiosk --start-fullscreen')
+        subprocess.Popen(cmd)
     else:
         # Fallback to system browser
         webbrowser.open(target_url)
