@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   MessageSquare,
   X,
@@ -95,6 +96,19 @@ const FormatInline = ({ text }) => {
 };
 
 export const ChatbotWidget = () => {
+  const location = useLocation();
+
+  // Remove AI Chatbot from assignment and assessment sections.
+  // Chatbot is strictly enabled for Candidate Portal pages and Admin pages only.
+  const isAssignmentSection =
+    location.pathname.startsWith('/assignment') ||
+    location.pathname.startsWith('/interview') ||
+    location.pathname.includes('assignment');
+
+  if (isAssignmentSection) {
+    return null;
+  }
+
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
