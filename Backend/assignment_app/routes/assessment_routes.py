@@ -6,6 +6,7 @@ from database import get_database
 
 from assignment_app.schemas.assessment_schemas import AssignmentDetailsResponse
 from assignment_app.services.assessment_service import service_get_or_create_assignment, UNLIMITED_TRIAL_EMAILS
+from assignment_app.services.assignment_generator import generate_coding_assignment
 
 router = APIRouter()
 
@@ -59,12 +60,32 @@ async def reset_assignment_for_unlimited_trial(
             detail="Resetting assessments is only permitted for the unlimited trial account (23091a32j4@rgmcet.edu.in). Regular candidates have a strict 1-attempt limit."
         )
 
-    # Reset assignment state to in_progress
+    # Generate fresh AI questions for retake
+    course_id = assign_doc.get("course_id")
+    course_title = assign_doc.get("course_title", "Technical Track")
+    course_desc = ""
+    if course_id and ObjectId.is_valid(course_id):
+        course = await db["courses"].find_one({"_id": ObjectId(course_id)})
+        if course:
+            course_title = course.get("title", course_title)
+            course_desc = course.get("description", "")
+
+    fresh_questions = await generate_coding_assignment(
+        candidate_name=assign_doc.get("candidate_name", "Candidate"),
+        resume_text="",
+        course_title=course_title,
+        course_description=course_desc,
+        user_id=str(assign_doc.get("user_id", "")),
+        assignment_token=assignment_token,
+    )
+
+    # Reset assignment state to in_progress with fresh questions
     await db["assignments"].update_one(
         {"assignment_token": assignment_token},
         {
             "$set": {
                 "status": "in_progress",
+                "questions": fresh_questions,
                 "score": None,
                 "submitted_at": None,
                 "ai_review": None,

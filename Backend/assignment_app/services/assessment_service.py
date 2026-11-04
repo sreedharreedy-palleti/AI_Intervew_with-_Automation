@@ -276,6 +276,33 @@ async def service_get_or_create_assignment(
         )
 
     if assign_doc:
+        # Check if existing questions are empty or are the old repetitive fallback questions
+        existing_questions = assign_doc.get("questions", [])
+        is_old_duplicate = (
+            not existing_questions
+            or any(
+                "Data Token Scope Validator" in q.get("title", "")
+                or "Target State Index Pair Resolver" in q.get("title", "")
+                for q in existing_questions
+            )
+        )
+
+        if is_old_duplicate:
+            print(f"[AI GENERATION] Regenerating fresh dynamic AI questions for {candidate_name} ({course_title})...")
+            fresh_questions = await generate_coding_assignment(
+                candidate_name=candidate_name,
+                resume_text=student.get("resume_raw_text", ""),
+                course_title=course_title,
+                course_description=course_desc,
+                user_id=student.get("user_id"),
+                assignment_token=assignment_token,
+            )
+            await db["assignments"].update_one(
+                {"assignment_token": assignment_token},
+                {"$set": {"questions": fresh_questions}}
+            )
+            assign_doc["questions"] = fresh_questions
+
         # Update duration and schedule if admin changed them
         if assign_doc.get("duration_minutes") != duration_minutes or assign_doc.get("assignment_datetime") != sched_iso:
             await db["assignments"].update_one(
