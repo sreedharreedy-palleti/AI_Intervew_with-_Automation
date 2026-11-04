@@ -123,10 +123,26 @@ const ScheduleAssignmentModal = ({
               min="15"
               max="360"
               required
-              value={scheduleFormData.duration_minutes}
-              onChange={(e) =>
-                setScheduleFormData({ ...scheduleFormData, duration_minutes: Number(e.target.value) })
-              }
+              placeholder="60"
+              value={scheduleFormData.duration_minutes ?? ''}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === '') {
+                  setScheduleFormData({ ...scheduleFormData, duration_minutes: '' });
+                } else {
+                  const parsed = parseInt(val, 10);
+                  setScheduleFormData({
+                    ...scheduleFormData,
+                    duration_minutes: isNaN(parsed) ? '' : parsed,
+                  });
+                }
+              }}
+              onBlur={(e) => {
+                const parsed = parseInt(e.target.value, 10);
+                if (isNaN(parsed) || parsed < 1) {
+                  setScheduleFormData({ ...scheduleFormData, duration_minutes: 60 });
+                }
+              }}
               style={{
                 width: '100%',
                 padding: '0.65rem 0.85rem',

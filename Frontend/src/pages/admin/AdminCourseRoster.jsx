@@ -175,12 +175,16 @@ const AdminCourseRoster = () => {
     }
 
     setScheduleLoading(true);
+    const submissionPayload = {
+      ...scheduleFormData,
+      duration_minutes: Number(scheduleFormData.duration_minutes) || 60,
+    };
     try {
       if (scheduleTarget) {
         await adminApi.scheduleCandidateAssignment(
           courseId,
           scheduleTarget.user_id,
-          scheduleFormData
+          submissionPayload
         );
         toast.success(
           scheduleFormData.send_email
@@ -188,7 +192,7 @@ const AdminCourseRoster = () => {
             : `Assignment scheduled successfully for ${scheduleTarget.name}!`
         );
       } else {
-        const res = await adminApi.broadcastCourseAssignment(courseId, scheduleFormData);
+        const res = await adminApi.broadcastCourseAssignment(courseId, submissionPayload);
         toast.success(
           scheduleFormData.send_email
             ? `Assignment scheduled & Gmails sent to ${res.candidates_count || 0} candidate(s)!`
@@ -815,10 +819,26 @@ const AdminCourseRoster = () => {
                   min="15"
                   max="360"
                   required
-                  value={scheduleFormData.duration_minutes}
-                  onChange={(e) =>
-                    setScheduleFormData({ ...scheduleFormData, duration_minutes: Number(e.target.value) })
-                  }
+                  placeholder="60"
+                  value={scheduleFormData.duration_minutes ?? ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '') {
+                      setScheduleFormData({ ...scheduleFormData, duration_minutes: '' });
+                    } else {
+                      const parsed = parseInt(val, 10);
+                      setScheduleFormData({
+                        ...scheduleFormData,
+                        duration_minutes: isNaN(parsed) ? '' : parsed,
+                      });
+                    }
+                  }}
+                  onBlur={(e) => {
+                    const parsed = parseInt(e.target.value, 10);
+                    if (isNaN(parsed) || parsed < 1) {
+                      setScheduleFormData({ ...scheduleFormData, duration_minutes: 60 });
+                    }
+                  }}
                   style={{
                     width: '100%',
                     padding: '0.65rem 0.85rem',
