@@ -5,11 +5,11 @@ from bson import ObjectId
 from fastapi import HTTPException, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from Intervew.schemas.session_schemas import (
+from intervew_app.schemas.session_schemas import (
     InterviewStartRequest,
     InterviewQuestion,
 )
-from Intervew.schemas.answer_schemas import (
+from intervew_app.schemas.answer_schemas import (
     SubmitAnswerRequest,
 )
 from .question_generator_service import generate_interview_questions

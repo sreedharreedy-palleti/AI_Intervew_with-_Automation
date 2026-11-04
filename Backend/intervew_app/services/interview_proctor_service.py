@@ -4,7 +4,7 @@ from typing import Dict, Any, Optional
 from fastapi import HTTPException, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from Intervew.schemas.proctor_schemas import (
+from intervew_app.schemas.proctor_schemas import (
     InterviewProctorFrameRequest,
     InterviewProctorFrameResponse,
 )

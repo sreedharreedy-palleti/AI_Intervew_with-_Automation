@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from database import get_database
 
-from Intervew.schemas.admin_schemas import InterviewScheduleRequest
-from Intervew.services.admin_interview_service import (
+from intervew_app.schemas.admin_schemas import InterviewScheduleRequest
+from intervew_app.services.admin_interview_service import (
     service_admin_list_interviews,
     service_admin_schedule_interview,
 )

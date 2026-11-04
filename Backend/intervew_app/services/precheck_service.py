@@ -3,7 +3,7 @@ from typing import Dict, Any
 from fastapi import HTTPException, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from Intervew.schemas.precheck_schemas import InterviewPrecheckRequest
+from intervew_app.schemas.precheck_schemas import InterviewPrecheckRequest
 
 
 async def service_verify_precheck(

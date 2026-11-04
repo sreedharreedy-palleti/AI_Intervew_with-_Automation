@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from database import get_database
 
-from Intervew.schemas.precheck_schemas import InterviewPrecheckRequest
-from Intervew.services.precheck_service import service_verify_precheck
+from intervew_app.schemas.precheck_schemas import InterviewPrecheckRequest
+from intervew_app.services.precheck_service import service_verify_precheck
 
 router = APIRouter()
 

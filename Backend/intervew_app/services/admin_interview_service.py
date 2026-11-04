@@ -3,7 +3,7 @@ from typing import Dict, Any, List
 from bson import ObjectId
 from fastapi import HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from Intervew.schemas.admin_schemas import InterviewScheduleRequest
+from intervew_app.schemas.admin_schemas import InterviewScheduleRequest
 
 
 async def service_admin_list_interviews(db: AsyncIOMotorDatabase) -> List[Dict[str, Any]]:

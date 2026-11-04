@@ -25,7 +25,7 @@ from auth.routes import auth_router
 from Admin.routes import admin_router
 from Users.routes import users_router
 from assignment_app.routes import assignment_router
-from Intervew.routes import interview_router
+from intervew_app.routes import interview_router
 from Chatbot.routes import chatbot_router
 from Users.services.resume_storage_service import (
     migrate_disk_resumes_to_mongo,

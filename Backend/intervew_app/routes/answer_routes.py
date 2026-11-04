@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from database import get_database
 
-from Intervew.schemas.answer_schemas import SubmitAnswerRequest
-from Intervew.services.session_service import service_submit_answer
+from intervew_app.schemas.answer_schemas import SubmitAnswerRequest
+from intervew_app.services.session_service import service_submit_answer
 
 router = APIRouter()
 

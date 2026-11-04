@@ -3,8 +3,8 @@ from fastapi import APIRouter, Depends, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from database import get_database
 
-from Intervew.schemas.session_schemas import InterviewStartRequest
-from Intervew.services.session_service import (
+from intervew_app.schemas.session_schemas import InterviewStartRequest
+from intervew_app.services.session_service import (
     service_start_or_resume_interview,
     service_get_interview_session,
     DEMO_TESTING_EMAILS,

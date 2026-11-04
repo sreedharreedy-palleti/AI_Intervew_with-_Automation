@@ -2,11 +2,11 @@ from fastapi import APIRouter, Depends, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from database import get_database
 
-from Intervew.schemas.proctor_schemas import (
+from intervew_app.schemas.proctor_schemas import (
     InterviewProctorFrameRequest,
     InterviewProctorFrameResponse,
 )
-from Intervew.services.interview_proctor_service import (
+from intervew_app.services.interview_proctor_service import (
     service_analyze_interview_frame,
 )
 
