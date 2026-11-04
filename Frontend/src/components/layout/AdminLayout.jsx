@@ -12,7 +12,6 @@ const AdminLayout = () => {
     if (location.pathname.includes('/admin/courses')) return 'Course & Roster Management';
     if (location.pathname.includes('/admin/users')) return 'Candidate & User Administration';
     if (location.pathname.includes('/admin/app-downloads')) return 'Windows Desktop App Downloads';
-    if (location.pathname.includes('/admin/ai-assistant')) return 'AI Intelligence Assistant';
     return 'Executive Admin Dashboard';
   };
 

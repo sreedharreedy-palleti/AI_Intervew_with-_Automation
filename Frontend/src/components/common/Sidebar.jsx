@@ -10,7 +10,6 @@ import {
   LogOut,
   ShieldAlert,
   UserCheck,
-  Bot,
   Download,
 } from 'lucide-react';
 import Badge from './Badge';
@@ -49,11 +48,6 @@ const Sidebar = () => {
       to: '/admin/app-downloads',
       label: 'Windows App Downloads',
       icon: <Download size={18} />,
-    },
-    {
-      to: '/admin/ai-assistant',
-      label: 'AI Intelligence Bot',
-      icon: <Bot size={18} />,
     },
   ];
 
