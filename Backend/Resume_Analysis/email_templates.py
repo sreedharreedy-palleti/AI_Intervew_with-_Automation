@@ -3,6 +3,7 @@ import smtplib
 import ssl
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from urllib.parse import quote
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -40,7 +41,10 @@ def notify_shortlisted_candidate(
     c_unique_code = unique_code or "EXAM-REQUIRED"
     c_routine = assignment_datetime or "Active & Open for 48 Hours"
     assignment_web_link = f"{CLIENT_ORIGIN}/assignment/{test_token}"
-    app_download_link = f"{BACKEND_ORIGIN}/api/v1/assignment/download/app"
+    app_download_link = (
+        f"{BACKEND_ORIGIN}/api/v1/assignment/download/app"
+        f"?email={quote(str(c_username))}&token={quote(str(test_token))}&name={quote(str(name))}&course={quote(str(course))}"
+    )
 
     message = MIMEMultipart("alternative")
     message["Subject"] = f"Shortlisted & AI Coding Assignment Access: {course}"
@@ -203,7 +207,10 @@ def notify_assignment_scheduled(
     c_username = username or email
     c_unique_code = unique_code or "EXAM-REQUIRED"
     assignment_link = f"{CLIENT_ORIGIN}/assignment/{test_token}"
-    app_download_link = f"{BACKEND_ORIGIN}/api/v1/assignment/download/app"
+    app_download_link = (
+        f"{BACKEND_ORIGIN}/api/v1/assignment/download/app"
+        f"?email={quote(str(c_username))}&token={quote(str(test_token))}&name={quote(str(name))}&course={quote(str(course))}"
+    )
 
     message = MIMEMultipart("alternative")
     message["Subject"] = f"Scheduled AI Coding Assignment & Access Code: {course}"

@@ -26,6 +26,8 @@ class EnrolledStudentDetail(BaseModel):
     assignment_policy: Optional[str] = None
     assignment_email_sent_at: Optional[datetime] = None
     duration_minutes: Optional[int] = None
+    app_downloaded: Optional[bool] = False
+    app_downloaded_at: Optional[datetime] = None
     enrolled_at: datetime
 
 

@@ -42,6 +42,7 @@ export const API_ROUTES = {
 
   // Admin Live Analytics & Visualizations
   ADMIN_ANALYTICS_DASHBOARD: '/api/v1/admin/analytics/dashboard',
+  ADMIN_APP_DOWNLOADS: '/api/v1/admin/analytics/app-downloads',
 };
 
 export const USER_ROLES = {

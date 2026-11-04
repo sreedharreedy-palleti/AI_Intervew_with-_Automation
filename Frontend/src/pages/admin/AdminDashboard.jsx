@@ -35,6 +35,8 @@ import {
   UserCheck,
   Calendar,
   Layers,
+  Download,
+  Laptop,
 } from 'lucide-react';
 import { formatDate } from '../../utils/formatters';
 
@@ -44,7 +46,10 @@ const AdminDashboard = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('OVERVIEW'); // 'OVERVIEW' | 'ROSTERS' | 'ACTIVITY'
+  const [activeTab, setActiveTab] = useState('OVERVIEW'); // 'OVERVIEW' | 'ROSTERS' | 'ACTIVITY' | 'APP_DOWNLOADS'
+  const [appDownloads, setAppDownloads] = useState([]);
+  const [appDownloadsLoading, setAppDownloadsLoading] = useState(false);
+  const [downloadSearchQuery, setDownloadSearchQuery] = useState('');
 
   const toast = useToast();
 
@@ -53,6 +58,9 @@ const AdminDashboard = () => {
     try {
       const analytics = await adminApi.getDashboardAnalytics();
       setData(analytics);
+      if (analytics?.app_downloads) {
+        setAppDownloads(analytics.app_downloads);
+      }
       setLastUpdated(new Date());
     } catch (err) {
       console.error('Failed to load dashboard analytics:', err);
@@ -63,9 +71,30 @@ const AdminDashboard = () => {
     }
   }, [toast]);
 
+  const fetchAppDownloads = useCallback(async () => {
+    setAppDownloadsLoading(true);
+    try {
+      const res = await adminApi.getAppDownloads();
+      if (res?.downloads) {
+        setAppDownloads(res.downloads);
+      }
+    } catch (err) {
+      console.error('Failed to load desktop app downloads:', err);
+      toast.error('Failed to load app downloads list');
+    } finally {
+      setAppDownloadsLoading(false);
+    }
+  }, [toast]);
+
   useEffect(() => {
     fetchLiveAnalytics();
   }, [fetchLiveAnalytics]);
+
+  useEffect(() => {
+    if (activeTab === 'APP_DOWNLOADS' && appDownloads.length === 0) {
+      fetchAppDownloads();
+    }
+  }, [activeTab, appDownloads.length, fetchAppDownloads]);
 
   if (isLoading) {
     return <Loader text="Connecting to MongoDB live analytics and calculating visual telemetry..." />;
@@ -88,6 +117,8 @@ const AdminDashboard = () => {
     in_progress_assignments: 0,
     violation_lockouts: 0,
     total_proctor_frames: 0,
+    total_app_downloads: 0,
+    unique_app_downloads: 0,
   };
 
   const coursesBreakdown = data?.courses_breakdown || [];
@@ -109,6 +140,17 @@ const AdminDashboard = () => {
       (app.email || '').toLowerCase().includes(q) ||
       (app.course_title || '').toLowerCase().includes(q) ||
       (app.college || '').toLowerCase().includes(q)
+    );
+  });
+
+  // Filter app downloads by search
+  const filteredDownloads = appDownloads.filter((dl) => {
+    const q = downloadSearchQuery.toLowerCase();
+    return (
+      (dl.name || '').toLowerCase().includes(q) ||
+      (dl.email || '').toLowerCase().includes(q) ||
+      (dl.course_title || '').toLowerCase().includes(q) ||
+      (dl.ip_address || '').toLowerCase().includes(q)
     );
   });
 
@@ -226,6 +268,26 @@ const AdminDashboard = () => {
             <strong style={{ color: '#f43f5e' }}>{summary.violation_lockouts}</strong> integrity violations flagged
           </div>
         </Card>
+
+        {/* Metric 7: Windows Desktop App Downloads */}
+        <Card
+          elevated
+          style={{ position: 'relative', overflow: 'hidden', borderLeft: '3px solid #0284c7', cursor: 'pointer' }}
+          onClick={() => setActiveTab('APP_DOWNLOADS')}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
+            <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>Windows App Downloads</span>
+            <div style={{ padding: '0.45rem', borderRadius: '8px', background: 'rgba(2, 132, 199, 0.15)', color: '#38bdf8' }}>
+              <Download size={18} />
+            </div>
+          </div>
+          <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#38bdf8', lineHeight: 1.1 }}>
+            {summary.total_app_downloads || 0}
+          </div>
+          <div style={{ marginTop: '0.6rem', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+            <strong style={{ color: '#38bdf8' }}>{summary.unique_app_downloads || 0}</strong> unique candidate{summary.unique_app_downloads === 1 ? '' : 's'} downloaded
+          </div>
+        </Card>
       </div>
 
       {/* MIDDLE TIER: VISUAL DATA CHARTS & COMPARISONS */}
@@ -318,6 +380,27 @@ const AdminDashboard = () => {
             >
               <Activity size={15} />
               <span>Recent Registered Candidates ({recentApplicants.length})</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('APP_DOWNLOADS')}
+              style={{
+                padding: '0.45rem 1rem',
+                borderRadius: 'var(--radius-md)',
+                fontSize: '0.88rem',
+                fontWeight: 700,
+                background: activeTab === 'APP_DOWNLOADS' ? 'var(--primary)' : 'rgba(255, 255, 255, 0.05)',
+                color: activeTab === 'APP_DOWNLOADS' ? '#fff' : 'var(--text-secondary)',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                transition: 'all var(--transition-fast)',
+              }}
+            >
+              <Download size={15} />
+              <span>Windows App Downloads ({appDownloads.length || summary.total_app_downloads || 0})</span>
             </button>
           </div>
 
@@ -526,6 +609,158 @@ const AdminDashboard = () => {
                         </tr>
                       );
                     })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'APP_DOWNLOADS' && (
+          <div>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '1rem',
+                marginBottom: '1.25rem',
+              }}
+            >
+              <div style={{ position: 'relative', minWidth: '280px', flex: 1, maxWidth: '420px' }}>
+                <Search
+                  size={16}
+                  style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}
+                />
+                <input
+                  type="text"
+                  placeholder="Search by candidate name, email, course, or IP..."
+                  value={downloadSearchQuery}
+                  onChange={(e) => setDownloadSearchQuery(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.55rem 0.75rem 0.55rem 2.25rem',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--border-subtle)',
+                    background: 'rgba(0, 0, 0, 0.25)',
+                    color: '#fff',
+                    fontSize: '0.85rem',
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                  Total Downloads: <strong style={{ color: '#38bdf8' }}>{appDownloads.length}</strong> (Unique Candidates: <strong style={{ color: '#10b981' }}>{summary.unique_app_downloads || 0}</strong>)
+                </span>
+                <button
+                  onClick={fetchAppDownloads}
+                  disabled={appDownloadsLoading}
+                  style={{
+                    padding: '0.45rem 0.85rem',
+                    background: 'rgba(56, 189, 248, 0.15)',
+                    border: '1px solid rgba(56, 189, 248, 0.35)',
+                    color: '#38bdf8',
+                    borderRadius: 'var(--radius-md)',
+                    cursor: 'pointer',
+                    fontSize: '0.82rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    fontWeight: 600,
+                  }}
+                >
+                  <RefreshCw size={13} className={appDownloadsLoading ? 'animate-spin' : ''} />
+                  <span>Refresh List</span>
+                </button>
+              </div>
+            </div>
+
+            {filteredDownloads.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '3.5rem 1rem', color: 'var(--text-muted)' }}>
+                <Download size={44} style={{ margin: '0 auto 1rem', opacity: 0.35, color: '#38bdf8' }} />
+                <h4 style={{ fontSize: '1.1rem', color: '#cbd5e1', marginBottom: '0.4rem' }}>
+                  No Windows Application Downloads Recorded
+                </h4>
+                <p style={{ fontSize: '0.85rem', maxWidth: '480px', margin: '0 auto', color: '#94a3b8' }}>
+                  When shortlisted candidates download <strong>AIAssignmentSetup.exe</strong> from their invitation email or portal, their details, timestamp, and client telemetry will appear here in real time.
+                </p>
+              </div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--border-subtle)', textAlign: 'left', color: 'var(--text-muted)' }}>
+                      <th style={{ padding: '0.75rem 0.6rem' }}>Candidate</th>
+                      <th style={{ padding: '0.75rem 0.6rem' }}>Target Course / Track</th>
+                      <th style={{ padding: '0.75rem 0.6rem' }}>Download Time</th>
+                      <th style={{ padding: '0.75rem 0.6rem' }}>Client IP</th>
+                      <th style={{ padding: '0.75rem 0.6rem' }}>Platform</th>
+                      <th style={{ padding: '0.75rem 0.6rem', textAlign: 'right' }}>Application Installer</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredDownloads.map((dl) => (
+                      <tr key={dl.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                        <td style={{ padding: '0.85rem 0.6rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                            <div
+                              style={{
+                                width: '32px',
+                                height: '32px',
+                                borderRadius: '50%',
+                                background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#fff',
+                                fontWeight: 700,
+                                fontSize: '0.8rem',
+                              }}
+                            >
+                              {(dl.name || dl.email || 'U')[0].toUpperCase()}
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: 600, color: '#f8fafc', fontSize: '0.9rem' }}>
+                                {dl.name || 'Anonymous User'}
+                              </div>
+                              <div style={{ fontSize: '0.78rem', color: '#94a3b8', fontFamily: 'monospace' }}>
+                                {dl.email}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ padding: '0.85rem 0.6rem' }}>
+                          <span style={{ color: '#cbd5e1', fontWeight: 500 }}>
+                            {dl.course_title || 'General Assessment'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '0.85rem 0.6rem', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Clock size={13} color="#94a3b8" />
+                            <span>{new Date(dl.downloaded_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</span>
+                          </div>
+                        </td>
+                        <td style={{ padding: '0.85rem 0.6rem' }}>
+                          <span style={{ fontFamily: 'monospace', fontSize: '0.78rem', background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: '4px', color: '#cbd5e1' }}>
+                            {dl.ip_address || 'unknown'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '0.85rem 0.6rem', color: 'var(--text-muted)', fontSize: '0.78rem' }} title={dl.user_agent}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Laptop size={13} color="#38bdf8" />
+                            <span>{dl.user_agent?.includes('Windows') ? 'Windows Desktop' : (dl.user_agent ? dl.user_agent.slice(0, 25) + '...' : 'Windows Client')}</span>
+                          </div>
+                        </td>
+                        <td style={{ padding: '0.85rem 0.6rem', textAlign: 'right' }}>
+                          <Badge variant="success">
+                            <CheckCircle size={11} style={{ marginRight: '4px' }} />
+                            AIAssignmentSetup.exe
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>

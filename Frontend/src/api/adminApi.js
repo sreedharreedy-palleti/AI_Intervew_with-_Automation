@@ -121,4 +121,9 @@ export const adminApi = {
     const res = await apiClient.get(API_ROUTES.ADMIN_ANALYTICS_DASHBOARD);
     return res.data;
   },
+
+  getAppDownloads: async () => {
+    const res = await apiClient.get(API_ROUTES.ADMIN_APP_DOWNLOADS);
+    return res.data;
+  },
 };

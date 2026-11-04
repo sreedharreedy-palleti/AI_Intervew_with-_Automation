@@ -98,6 +98,8 @@ async def service_get_dashboard_analytics(db: AsyncIOMotorDatabase) -> dict:
                 "interview_status": s.get("interview_status"),
                 "interview_score": s.get("interview_score"),
                 "interview_verdict": s.get("interview_verdict"),
+                "app_downloaded": s.get("app_downloaded", False),
+                "app_downloaded_at": s.get("app_downloaded_at").isoformat() if hasattr(s.get("app_downloaded_at"), "isoformat") else s.get("app_downloaded_at"),
             })
 
         courses_list.append({
@@ -154,7 +156,28 @@ async def service_get_dashboard_analytics(db: AsyncIOMotorDatabase) -> dict:
     
     total_proctor_frames = await db["proctor_frames"].count_documents({})
 
-    # 5. Recent Activity
+    # 5. Desktop Application Downloads Telemetry
+    total_app_downloads = await db["app_downloads"].count_documents({})
+    distinct_emails = await db["app_downloads"].distinct("email")
+    unique_candidates = [e for e in distinct_emails if e and e != "anonymous"]
+
+    # Recent downloads (100)
+    downloads_cursor = db["app_downloads"].find().sort("downloaded_at", -1).limit(100)
+    recent_app_downloads = []
+    async for d in downloads_cursor:
+        dt = d.get("downloaded_at", datetime.now(timezone.utc))
+        recent_app_downloads.append({
+            "id": str(d["_id"]),
+            "email": d.get("email", ""),
+            "name": d.get("name", ""),
+            "course_title": d.get("course_title", ""),
+            "assignment_token": d.get("assignment_token", ""),
+            "ip_address": d.get("ip_address", ""),
+            "user_agent": d.get("user_agent", ""),
+            "downloaded_at": dt.isoformat() if hasattr(dt, "isoformat") else str(dt),
+        })
+
+    # 6. Recent Activity
     # Sort applicants by enrolled_at descending
     def _parse_dt(item):
         val = item.get("enrolled_at")
@@ -205,6 +228,8 @@ async def service_get_dashboard_analytics(db: AsyncIOMotorDatabase) -> dict:
             "violation_lockouts": violation_lockouts,
             "scheduled_assignments": scheduled_assignments,
             "total_proctor_frames": total_proctor_frames,
+            "total_app_downloads": total_app_downloads,
+            "unique_app_downloads": len(unique_candidates),
         },
         "courses_breakdown": courses_list,
         "ats_distribution": ats_distribution,
@@ -216,5 +241,37 @@ async def service_get_dashboard_analytics(db: AsyncIOMotorDatabase) -> dict:
         "course_levels": course_levels,
         "recent_applicants": recent_applicants,
         "recent_assignments": recent_assignments,
+        "app_downloads": recent_app_downloads,
+    }
+
+
+async def service_get_app_downloads(db: AsyncIOMotorDatabase) -> dict:
+    """
+    Returns the total count, unique candidate count, and full list of
+    users who downloaded the Windows desktop application (.exe).
+    """
+    total_downloads = await db["app_downloads"].count_documents({})
+    distinct_emails = await db["app_downloads"].distinct("email")
+    unique_candidates = [e for e in distinct_emails if e and e != "anonymous"]
+
+    cursor = db["app_downloads"].find().sort("downloaded_at", -1).limit(500)
+    downloads_list = []
+    async for d in cursor:
+        dt = d.get("downloaded_at", datetime.now(timezone.utc))
+        downloads_list.append({
+            "id": str(d["_id"]),
+            "email": d.get("email", ""),
+            "name": d.get("name", ""),
+            "course_title": d.get("course_title", ""),
+            "assignment_token": d.get("assignment_token", ""),
+            "ip_address": d.get("ip_address", ""),
+            "user_agent": d.get("user_agent", ""),
+            "downloaded_at": dt.isoformat() if hasattr(dt, "isoformat") else str(dt),
+        })
+
+    return {
+        "total_downloads": total_downloads,
+        "unique_users_count": len(unique_candidates),
+        "downloads": downloads_list,
     }
 

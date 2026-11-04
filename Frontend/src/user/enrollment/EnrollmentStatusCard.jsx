@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
-import { CheckCircle, User, Clock, Sparkles, ArrowRight, Calendar, AlertTriangle } from 'lucide-react';
+import { CheckCircle, User, Clock, Sparkles, ArrowRight, Calendar, AlertTriangle, Download } from 'lucide-react';
+import { API_BASE_URL } from '../../utils/constants';
 
 const EnrollmentStatusCard = ({ course }) => {
   const { user } = useAuth();
@@ -303,6 +304,26 @@ const EnrollmentStatusCard = ({ course }) => {
                   <span>Start AI Technical Interview</span>
                 </Link>
               )}
+
+              {/* Dedicated Windows App Download Link */}
+              <a
+                href={`${API_BASE_URL}/api/v1/assignment/download/app?email=${encodeURIComponent(user?.email || '')}&token=${encodeURIComponent(course.assignment_token || '')}&name=${encodeURIComponent(user?.name || '')}&course=${encodeURIComponent(course.title || '')}`}
+                download="AIAssignmentSetup.exe"
+                className="btn btn-secondary btn-block btn-sm"
+                style={{
+                  textDecoration: 'none',
+                  borderColor: 'rgba(56, 189, 248, 0.4)',
+                  color: '#38bdf8',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  background: 'rgba(56, 189, 248, 0.08)',
+                }}
+              >
+                <Download size={13} color="#38bdf8" />
+                <span>Download Windows App (.exe)</span>
+              </a>
             </>
           )}
 

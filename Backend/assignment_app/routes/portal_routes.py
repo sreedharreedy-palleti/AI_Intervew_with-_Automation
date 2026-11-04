@@ -1,7 +1,11 @@
 import os
 from pathlib import Path
-from fastapi import APIRouter, HTTPException
+from typing import Optional
+from datetime import datetime, timezone
+from fastapi import APIRouter, HTTPException, Request, Query, Depends
 from fastapi.responses import HTMLResponse, FileResponse
+from motor.motor_asyncio import AsyncIOMotorDatabase
+from database import get_database
 
 router = APIRouter()
 
@@ -10,18 +14,100 @@ EXE_FILE_PATH = STATIC_DOWNLOADS_DIR / "AIAssignmentSetup.exe"
 
 
 @router.get("/download/app")
-async def download_assignment_app():
+async def download_assignment_app(
+    request: Request,
+    email: Optional[str] = Query(None),
+    token: Optional[str] = Query(None),
+    course: Optional[str] = Query(None),
+    name: Optional[str] = Query(None),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+):
     """
     Downloads the official AI Coding Assessment Desktop Application installer (.exe).
+    Logs download telemetry and candidate identity to MongoDB for Admin visibility.
     """
     if not EXE_FILE_PATH.exists():
-        raise HTTPException(status_code=404, detail="AI Assignment desktop application setup is currently being prepared.")
+        raise HTTPException(
+            status_code=404,
+            detail="AI Assignment desktop application setup is currently being prepared.",
+        )
+
+    # Telemetry logging to MongoDB
+    try:
+        user_email = (email or "").strip().lower()
+        user_name = (name or "").strip()
+        course_title = (course or "").strip()
+        assignment_token = (token or "").strip()
+
+        # If token provided but missing details, resolve candidate from DB
+        if assignment_token and (not user_email or not user_name or not course_title):
+            assignment = await db["assignments"].find_one({"assignment_token": assignment_token})
+            if assignment:
+                user_email = user_email or (assignment.get("candidate_email") or "").lower()
+                user_name = user_name or assignment.get("candidate_name") or ""
+                course_title = course_title or assignment.get("course_title") or ""
+            else:
+                course_doc = await db["courses"].find_one({"enrolled_students.assignment_token": assignment_token})
+                if course_doc:
+                    course_title = course_title or course_doc.get("title", "")
+                    for st in course_doc.get("enrolled_students", []):
+                        if st.get("assignment_token") == assignment_token:
+                            user_email = user_email or (st.get("email") or "").lower()
+                            user_name = user_name or st.get("name", "")
+                            break
+
+        # If email known but name missing, resolve candidate name from users collection
+        if user_email and not user_name:
+            user_doc = await db["users"].find_one({"email": user_email})
+            if user_doc:
+                user_name = user_doc.get("name", "")
+
+        client_ip = ""
+        x_forwarded = request.headers.get("x-forwarded-for")
+        if x_forwarded:
+            client_ip = x_forwarded.split(",")[0].strip()
+        elif request.client:
+            client_ip = request.client.host
+        user_agent = request.headers.get("user-agent", "Unknown")
+
+        now = datetime.now(timezone.utc)
+        record = {
+            "email": user_email or "anonymous",
+            "name": user_name or (user_email.split("@")[0] if user_email else "Anonymous Candidate"),
+            "course_title": course_title or "General Assessment",
+            "assignment_token": assignment_token or None,
+            "ip_address": client_ip or "unknown",
+            "user_agent": user_agent,
+            "downloaded_at": now,
+        }
+        await db["app_downloads"].insert_one(record)
+
+        # Update candidate status in enrolled_students if email is available
+        if user_email and user_email != "anonymous":
+            await db["courses"].update_many(
+                {"enrolled_students.email": user_email},
+                {"$set": {
+                    "enrolled_students.$[elem].app_downloaded": True,
+                    "enrolled_students.$[elem].app_downloaded_at": now,
+                }},
+                array_filters=[{"elem.email": user_email}]
+            )
+            if assignment_token:
+                await db["assignments"].update_one(
+                    {"assignment_token": assignment_token},
+                    {"$set": {
+                        "app_downloaded": True,
+                        "app_downloaded_at": now,
+                    }}
+                )
+    except Exception as exc:
+        print(f"[APP DOWNLOAD TRACKING NOTICE] {exc}")
 
     return FileResponse(
         path=str(EXE_FILE_PATH),
         filename="AIAssignmentSetup.exe",
         media_type="application/vnd.microsoft.portable-executable",
-        headers={"Content-Disposition": 'attachment; filename="AIAssignmentSetup.exe"'}
+        headers={"Content-Disposition": 'attachment; filename="AIAssignmentSetup.exe"'},
     )
 
 

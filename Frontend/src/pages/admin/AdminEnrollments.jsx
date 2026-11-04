@@ -31,6 +31,7 @@ import {
   Mail,
   Send,
   AlertCircle,
+  Download,
 } from 'lucide-react';
 import { formatDate, getResumeUrl } from '../../utils/formatters';
 
@@ -617,6 +618,23 @@ const AdminEnrollments = () => {
                             <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                               {student.email}
                             </div>
+                            {student.app_downloaded && (
+                              <div
+                                style={{
+                                  marginTop: '0.2rem',
+                                  fontSize: '0.72rem',
+                                  color: '#34d399',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '3px',
+                                  fontWeight: 600,
+                                }}
+                                title="Candidate downloaded AIAssignmentSetup.exe"
+                              >
+                                <Download size={11} color="#10b981" />
+                                <span>Desktop App Downloaded</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </td>

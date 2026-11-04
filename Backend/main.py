@@ -14,8 +14,9 @@ if env_file.exists():
 else:
     load_dotenv()
 
+from typing import Optional
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request, Query
 from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
@@ -77,8 +78,22 @@ async def get_legacy_uploaded_resume(
 
 
 @app.get("/download/app", tags=["Downloads"])
-async def root_download_assignment_app():
-    return await download_assignment_app()
+async def root_download_assignment_app(
+    request: Request,
+    email: Optional[str] = Query(None),
+    token: Optional[str] = Query(None),
+    course: Optional[str] = Query(None),
+    name: Optional[str] = Query(None),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+):
+    return await download_assignment_app(
+        request=request,
+        email=email,
+        token=token,
+        course=course,
+        name=name,
+        db=db,
+    )
 
 
 @app.get("/", tags=["Health"])
