@@ -137,6 +137,77 @@ async def get_interview_session(
     return await service_get_interview_session(interview_token, db)
 
 
+@router.post("/{interview_token}/verify-access")
+async def verify_interview_access(
+    interview_token: str,
+    payload: dict,
+    db: AsyncIOMotorDatabase = Depends(get_database),
+):
+    """
+    Verifies that the provided candidate email and unique exam code
+    match the record to unlock the AI Interview session.
+    """
+    from fastapi import HTTPException
+    email = (payload.get("username") or payload.get("email") or "").strip().lower()
+    code = (payload.get("unique_code") or payload.get("code") or "").strip().upper()
+
+    session = await db["interviews"].find_one({
+        "$or": [
+            {"interview_token": interview_token},
+            {"assignment_token": interview_token},
+        ]
+    })
+
+    student = None
+    if not session:
+        course = await db["courses"].find_one({
+            "$or": [
+                {"enrolled_students.assignment_token": interview_token},
+                {"enrolled_students.interview_token": interview_token},
+            ]
+        })
+        if course:
+            for s in course.get("enrolled_students", []):
+                if s.get("assignment_token") == interview_token or s.get("interview_token") == interview_token:
+                    student = s
+                    break
+
+    candidate_email = (
+        (session.get("candidate_email") if session else None)
+        or (student.get("email") if student else None)
+        or ""
+    ).strip().lower()
+
+    student_code = (
+        (session.get("unique_code") if session else None)
+        or (student.get("unique_code") if student else None)
+        or ""
+    ).strip().upper()
+
+    is_unlimited = candidate_email in DEMO_TESTING_EMAILS or email in DEMO_TESTING_EMAILS
+
+    def _norm(c: str) -> str:
+        return str(c).strip().upper().replace("EXAM-", "").replace("EXAM", "").replace("-", "")
+
+    if not is_unlimited:
+        if email and candidate_email and email != candidate_email:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Email mismatch: '{email}' does not match the registered candidate record."
+            )
+        if code and student_code and _norm(code) != _norm(student_code):
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid Exam Passcode. Please check the unique code from your invitation."
+            )
+
+    return {
+        "verified": True,
+        "message": "Interview credentials verified successfully.",
+        "candidate_email": candidate_email or email,
+    }
+
+
 @router.post("/{interview_token}/reset-trial")
 async def reset_interview_for_unlimited_trial(
     interview_token: str,

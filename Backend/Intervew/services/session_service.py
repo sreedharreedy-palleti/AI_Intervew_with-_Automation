@@ -271,10 +271,71 @@ async def service_get_interview_session(
 ) -> Dict[str, Any]:
     """
     Fetches the active interview session, questions, and current question index.
+    Supports resolving session using either interview_token or assignment_token.
     """
-    session = await db["interviews"].find_one({"interview_token": interview_token})
+    token_str = (interview_token or "").strip()
+    session = await db["interviews"].find_one({
+        "$or": [
+            {"interview_token": token_str},
+            {"assignment_token": token_str},
+        ]
+    })
+
+    # If no existing interview session in db, cross-resolve from assignments or courses
     if not session:
-        raise HTTPException(status_code=404, detail="Interview session not found.")
+        assign_doc = await db["assignments"].find_one({"assignment_token": token_str})
+        course_match = await db["courses"].find_one({
+            "$or": [
+                {"enrolled_students.assignment_token": token_str},
+                {"enrolled_students.interview_token": token_str},
+            ]
+        })
+
+        matched_student = None
+        if course_match:
+            for st in course_match.get("enrolled_students", []):
+                if st.get("assignment_token") == token_str or st.get("interview_token") == token_str:
+                    matched_student = st
+                    break
+
+        if assign_doc or matched_student:
+            c_name = (assign_doc.get("candidate_name") if assign_doc else None) or (matched_student.get("name") if matched_student else "Candidate")
+            c_email = (assign_doc.get("candidate_email") if assign_doc else None) or (matched_student.get("email") if matched_student else "")
+            c_course = (course_match.get("title") if course_match else None) or (assign_doc.get("course_title") if assign_doc else "Technical Track")
+            c_course_id = str(course_match["_id"]) if course_match else (assign_doc.get("course_id") if assign_doc else None)
+            c_user_id = str((matched_student.get("user_id") if matched_student else None) or (assign_doc.get("user_id") if assign_doc else ""))
+            u_code = (matched_student.get("unique_code") if matched_student else None) or (assign_doc.get("unique_code") if assign_doc else "")
+            a_score = (assign_doc.get("score") if assign_doc else None) or (matched_student.get("assignment_score") if matched_student else None)
+
+            # Auto start or resume interview if qualified
+            try:
+                start_payload = InterviewStartRequest(
+                    assignment_token=token_str,
+                    course_id=c_course_id,
+                    user_id=c_user_id,
+                    candidate_name=c_name,
+                    candidate_email=c_email,
+                )
+                session = await service_start_or_resume_interview(start_payload, db)
+                session["unique_code"] = u_code
+                return session
+            except Exception as exc:
+                print(f"[INTERVIEW RESOLVE NOTICE] {exc}")
+                return {
+                    "interview_token": token_str,
+                    "assignment_token": token_str,
+                    "status": "pending_qualification",
+                    "candidate_name": c_name,
+                    "candidate_email": c_email,
+                    "course_title": c_course,
+                    "unique_code": u_code,
+                    "assignment_score": a_score,
+                    "qualified": False,
+                    "message": str(exc),
+                }
+
+    if not session:
+        raise HTTPException(status_code=404, detail="Interview session not found for this token.")
 
     idx = session.get("current_question_index", 0)
     questions = session.get("questions", [])
@@ -282,11 +343,24 @@ async def service_get_interview_session(
 
     is_unlimited = (session.get("candidate_email") or "").strip().lower() in DEMO_TESTING_EMAILS
 
+    # Look for candidate unique code
+    u_code = session.get("unique_code", "")
+    if not u_code and session.get("candidate_email"):
+        c_doc = await db["courses"].find_one({"enrolled_students.email": session["candidate_email"]})
+        if c_doc:
+            for s in c_doc.get("enrolled_students", []):
+                if s.get("email") == session["candidate_email"]:
+                    u_code = s.get("unique_code", "")
+                    break
+
     return {
         "interview_token": session["interview_token"],
+        "assignment_token": session.get("assignment_token", token_str),
         "status": session.get("status", "in_progress"),
         "candidate_name": session.get("candidate_name", "Candidate"),
+        "candidate_email": session.get("candidate_email", ""),
         "course_title": session.get("course_title", "Technical Track"),
+        "unique_code": u_code,
         "assignment_score": session.get("assignment_score"),
         "current_question_index": idx,
         "total_questions": len(questions),

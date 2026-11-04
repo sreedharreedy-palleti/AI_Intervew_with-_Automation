@@ -16,6 +16,11 @@ export const interviewApi = {
     return res.data;
   },
 
+  verifyAccess: async (interviewToken, payload) => {
+    const res = await apiClient.post(`/api/v1/interview/${interviewToken}/verify-access`, payload);
+    return res.data;
+  },
+
   submitAnswer: async (interviewToken, payload) => {
     const res = await apiClient.post(`/api/v1/interview/${interviewToken}/answer`, payload);
     return res.data;

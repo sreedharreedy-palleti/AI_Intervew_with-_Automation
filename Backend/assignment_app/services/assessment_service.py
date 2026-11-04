@@ -159,6 +159,29 @@ async def service_get_or_create_assignment(
     course = await db["courses"].find_one({"enrolled_students.assignment_token": assignment_token})
     assign_doc = await db["assignments"].find_one({"assignment_token": assignment_token})
 
+    # Allow cross-resolving if caller provided interview_token instead
+    if not course and not assign_doc:
+        interview_doc = await db["interviews"].find_one({"interview_token": assignment_token})
+        if interview_doc and interview_doc.get("assignment_token"):
+            return await service_get_or_create_assignment(
+                assignment_token=interview_doc["assignment_token"],
+                db=db,
+                unique_code=unique_code,
+                username=username,
+                from_app=from_app,
+            )
+        course_by_interview = await db["courses"].find_one({"enrolled_students.interview_token": assignment_token})
+        if course_by_interview:
+            for s in course_by_interview.get("enrolled_students", []):
+                if s.get("interview_token") == assignment_token and s.get("assignment_token"):
+                    return await service_get_or_create_assignment(
+                        assignment_token=s["assignment_token"],
+                        db=db,
+                        unique_code=unique_code,
+                        username=username,
+                        from_app=from_app,
+                    )
+
     if not course and assign_doc and assign_doc.get("course_id"):
         from bson import ObjectId
         try:
