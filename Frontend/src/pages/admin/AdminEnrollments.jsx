@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { adminApi } from '../../api/adminApi';
 import { useToast } from '../../hooks/useToast';
 import Card from '../../components/common/Card';
@@ -36,9 +36,14 @@ import {
 import { formatDate, getResumeUrl } from '../../utils/formatters';
 
 const AdminEnrollments = () => {
+  const [searchParams] = useSearchParams();
+  const initialStatus = (searchParams.get('status') || 'ALL').toUpperCase();
+
   const [courses, setCourses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState(
+    ['ALL', 'SHORTLISTED', 'NOT_SHORTLISTED'].includes(initialStatus) ? initialStatus : 'ALL'
+  );
   const [selectedCourseFilter, setSelectedCourseFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [actionLoadingId, setActionLoadingId] = useState(null);
@@ -101,6 +106,13 @@ const AdminEnrollments = () => {
   useEffect(() => {
     fetchEnrollments();
   }, []);
+
+  useEffect(() => {
+    const qStatus = (searchParams.get('status') || '').toUpperCase();
+    if (['ALL', 'SHORTLISTED', 'NOT_SHORTLISTED'].includes(qStatus)) {
+      setStatusFilter(qStatus);
+    }
+  }, [searchParams]);
 
   // Aggregate all enrolled candidates across all courses
   const allApplicants = courses.flatMap((course) =>

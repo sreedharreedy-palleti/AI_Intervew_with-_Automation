@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { adminApi } from '../../api/adminApi';
 import { useToast } from '../../hooks/useToast';
 import Card from '../../components/common/Card';
@@ -52,6 +52,7 @@ const AdminDashboard = () => {
   const [downloadSearchQuery, setDownloadSearchQuery] = useState('');
 
   const toast = useToast();
+  const navigate = useNavigate();
 
   const fetchLiveAnalytics = useCallback(async (showRefreshing = false) => {
     if (showRefreshing) setIsRefreshing(true);
@@ -160,7 +161,23 @@ const AdminDashboard = () => {
 
   return (
     <div className="animate-fade-in" style={{ paddingBottom: '3rem' }}>
-      {/* TOP TIER: 6 LIVE KPI METRIC CARDS */}
+      <style>{`
+        .metric-card-link {
+          cursor: pointer;
+          transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, filter 0.2s ease;
+          user-select: none;
+        }
+        .metric-card-link:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 14px 28px rgba(0, 0, 0, 0.45);
+          filter: brightness(1.08);
+        }
+        .metric-card-link:active {
+          transform: translateY(-1px);
+        }
+      `}</style>
+
+      {/* TOP TIER: 7 LIVE KPI METRIC CARDS (CLICKABLE REDIRECTS) */}
       <div
         style={{
           display: 'grid',
@@ -169,8 +186,14 @@ const AdminDashboard = () => {
           marginBottom: '2rem',
         }}
       >
-        {/* Metric 1: Total Users */}
-        <Card elevated style={{ position: 'relative', overflow: 'hidden' }}>
+        {/* Metric 1: Total Users -> /admin/users */}
+        <Card
+          elevated
+          className="metric-card-link"
+          style={{ position: 'relative', overflow: 'hidden' }}
+          onClick={() => navigate('/admin/users')}
+          title="Click to view and manage candidate & admin accounts"
+        >
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #6366f1, #8b5cf6)' }} />
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
             <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>Total Registered Users</span>
@@ -187,8 +210,14 @@ const AdminDashboard = () => {
           </div>
         </Card>
 
-        {/* Metric 2: Total Active Courses */}
-        <Card elevated style={{ position: 'relative', overflow: 'hidden' }}>
+        {/* Metric 2: Total Active Courses -> /admin/courses */}
+        <Card
+          elevated
+          className="metric-card-link"
+          style={{ position: 'relative', overflow: 'hidden' }}
+          onClick={() => navigate('/admin/courses')}
+          title="Click to view and manage courses & curricula"
+        >
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #38bdf8, #0ea5e9)' }} />
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
             <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>Total Active Courses</span>
@@ -204,8 +233,14 @@ const AdminDashboard = () => {
           </div>
         </Card>
 
-        {/* Metric 3: Total Registered Course Enrollments */}
-        <Card elevated style={{ position: 'relative', overflow: 'hidden' }}>
+        {/* Metric 3: Total Registered Course Enrollments -> /admin/enrollments */}
+        <Card
+          elevated
+          className="metric-card-link"
+          style={{ position: 'relative', overflow: 'hidden' }}
+          onClick={() => navigate('/admin/enrollments')}
+          title="Click to view all candidate applications & enrollments"
+        >
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #c084fc, #a855f7)' }} />
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
             <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>Total Registrations</span>
@@ -221,8 +256,14 @@ const AdminDashboard = () => {
           </div>
         </Card>
 
-        {/* Metric 4: AI Shortlisted Candidates */}
-        <Card elevated style={{ position: 'relative', overflow: 'hidden', borderLeft: '3px solid #10b981' }}>
+        {/* Metric 4: AI Shortlisted Candidates -> /admin/enrollments?status=SHORTLISTED */}
+        <Card
+          elevated
+          className="metric-card-link"
+          style={{ position: 'relative', overflow: 'hidden', borderLeft: '3px solid #10b981' }}
+          onClick={() => navigate('/admin/enrollments?status=SHORTLISTED')}
+          title="Click to view shortlisted candidates (ATS ≥ 70)"
+        >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
             <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>Shortlisted Candidates</span>
             <div style={{ padding: '0.45rem', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.15)', color: '#6ee7b7' }}>
@@ -237,8 +278,14 @@ const AdminDashboard = () => {
           </div>
         </Card>
 
-        {/* Metric 5: Average ATS Match Score */}
-        <Card elevated style={{ position: 'relative', overflow: 'hidden', borderLeft: '3px solid #f59e0b' }}>
+        {/* Metric 5: Average ATS Match Score -> /admin/enrollments */}
+        <Card
+          elevated
+          className="metric-card-link"
+          style={{ position: 'relative', overflow: 'hidden', borderLeft: '3px solid #f59e0b' }}
+          onClick={() => navigate('/admin/enrollments')}
+          title="Click to view candidate ATS score rankings & evaluations"
+        >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
             <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>Average ATS Score</span>
             <div style={{ padding: '0.45rem', borderRadius: '8px', background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24' }}>
@@ -253,8 +300,14 @@ const AdminDashboard = () => {
           </div>
         </Card>
 
-        {/* Metric 6: Proctoring & Integrity Telemetry */}
-        <Card elevated style={{ position: 'relative', overflow: 'hidden', borderLeft: '3px solid #f43f5e' }}>
+        {/* Metric 6: Proctoring & Integrity Telemetry -> /admin/enrollments */}
+        <Card
+          elevated
+          className="metric-card-link"
+          style={{ position: 'relative', overflow: 'hidden', borderLeft: '3px solid #f43f5e' }}
+          onClick={() => navigate('/admin/enrollments')}
+          title="Click to view scheduled assessments & exam integrity results"
+        >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
             <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>Proctoring Telemetry</span>
             <div style={{ padding: '0.45rem', borderRadius: '8px', background: 'rgba(244, 63, 94, 0.15)', color: '#fda4af' }}>
@@ -269,11 +322,19 @@ const AdminDashboard = () => {
           </div>
         </Card>
 
-        {/* Metric 7: Windows Desktop App Downloads */}
+        {/* Metric 7: Windows Desktop App Downloads -> Switches to App Downloads Tab */}
         <Card
           elevated
-          style={{ position: 'relative', overflow: 'hidden', borderLeft: '3px solid #0284c7', cursor: 'pointer' }}
-          onClick={() => setActiveTab('APP_DOWNLOADS')}
+          className="metric-card-link"
+          style={{ position: 'relative', overflow: 'hidden', borderLeft: '3px solid #0284c7' }}
+          onClick={() => {
+            setActiveTab('APP_DOWNLOADS');
+            const target = document.getElementById('dashboard-tables-section');
+            if (target) {
+              target.scrollIntoView({ behavior: 'smooth' });
+            }
+          }}
+          title="Click to view list of candidates who downloaded the Windows desktop application (.exe)"
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
             <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>Windows App Downloads</span>
@@ -325,7 +386,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* MAIN DATA TABLES & ROSTERS SECTION */}
-      <Card elevated>
+      <Card elevated id="dashboard-tables-section">
         <div
           style={{
             display: 'flex',
