@@ -68,10 +68,26 @@ const Sidebar = () => {
         top: 0,
         left: 0,
         zIndex: 40,
-        overflowY: 'auto',
+        overflow: 'hidden',
       }}
     >
-      {/* Brand Header */}
+      <style>{`
+        .sidebar-scrollable-nav::-webkit-scrollbar {
+          width: 4px;
+        }
+        .sidebar-scrollable-nav::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .sidebar-scrollable-nav::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.12);
+          border-radius: 4px;
+        }
+        .sidebar-scrollable-nav::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.25);
+        }
+      `}</style>
+
+      {/* Brand Header (Fixed at Top) */}
       <div
         style={{
           padding: '1.5rem',
@@ -104,8 +120,19 @@ const Sidebar = () => {
         </div>
       </div>
 
-      {/* Navigation List */}
-      <nav style={{ padding: '1.25rem 0.85rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+      {/* Navigation List (Scrollable Area) */}
+      <nav
+        className="sidebar-scrollable-nav"
+        style={{
+          padding: '1.25rem 0.85rem',
+          flex: 1,
+          overflowY: 'auto',
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.4rem',
+        }}
+      >
         <div
           style={{
             fontSize: '0.75rem',
@@ -173,13 +200,14 @@ const Sidebar = () => {
         </Link>
       </nav>
 
-      {/* Footer User Info & Logout */}
+      {/* Footer User Info & Logout (Fixed at Bottom) */}
       <div
         style={{
           padding: '1.25rem',
           borderTop: '1px solid var(--border-subtle)',
-          background: 'rgba(0, 0, 0, 0.2)',
+          background: 'rgba(0, 0, 0, 0.25)',
           flexShrink: 0,
+          marginTop: 'auto',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.85rem' }}>
