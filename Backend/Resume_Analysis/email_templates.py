@@ -99,10 +99,10 @@ def notify_shortlisted_candidate(
         <!-- AI Assignment Notification Banner -->
         <div style="background: rgba(16, 185, 129, 0.08); border-left: 4px solid #10b981; border-radius: 0 8px 8px 0; padding: 14px 16px; margin: 22px 0;">
           <h4 style="color: #34d399; margin: 0 0 6px 0; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">
-            ✨ Official AI Coding Simulation Client & Web Portal
+            ✨ Official AI Coding Simulation Client
           </h4>
           <p style="color: #cbd5e1; font-size: 13px; line-height: 1.5; margin: 0;">
-            Your personalized technical assignment has been generated. You can download the dedicated <strong>AI Assignment Desktop Application (.exe)</strong> or launch directly in Google Chrome.
+            Your personalized technical assignment has been generated. Please download and install the dedicated <strong>AI Assignment Desktop Application (.exe)</strong> to complete your assessment.
           </p>
         </div>
 
@@ -134,16 +134,6 @@ def notify_shortlisted_candidate(
               <li>Click <strong>Launch Secure Assessment Window</strong> to begin your assessment!</li>
             </ol>
           </div>
-        </div>
-
-        <!-- Web Browser Fallback Box -->
-        <div style="background: rgba(30, 41, 59, 0.4); border: 1px dashed rgba(255, 255, 255, 0.18); border-radius: 10px; padding: 16px 20px; text-align: center; margin: 20px 0;">
-          <p style="color: #9ca3af; font-size: 12px; margin: 0 0 8px 0;">
-            Or launch directly inside your web browser:
-          </p>
-          <a href="{assignment_web_link}" style="color: #a5b4fc; text-decoration: underline; font-weight: 600; font-size: 13px;">
-            🚀 Open Assignment in Google Chrome Browser
-          </a>
         </div>
 
         <p style="color: #6b7280; font-size: 12px; text-align: center; margin-top: 10px;">
@@ -223,10 +213,9 @@ def notify_assignment_scheduled(
     policy_lines = [p.strip() for p in (assignment_policy or "").split("\n") if p.strip()]
     if not policy_lines:
         policy_lines = [
-            "Browser Requirement: Open and complete this examination exclusively in Google Chrome browser.",
+            "Application Requirement: Complete this examination exclusively in the dedicated AI Assignment Desktop Application (.exe).",
             "Complete the technical assignment within the allotted duration.",
-            "Solve your coding challenges directly in Google Chrome (no software download required).",
-            "Webcam and screen proctoring will be active throughout the interactive session.",
+            "Webcam, microphone, and screen proctoring will be active throughout the interactive session.",
             "Unauthorized tab switching or background applications will disqualify your attempt.",
         ]
     policy_html = "".join([f"<li style='margin-bottom: 8px;'>{line}</li>" for line in policy_lines])
@@ -246,7 +235,7 @@ def notify_assignment_scheduled(
 
         <p style="font-size: 15px; color: #f3f4f6;">Dear <strong>{name}</strong>,</p>
         <p style="color: #9ca3af; font-size: 14px; line-height: 1.6;">
-          Your technical AI coding exam has been scheduled by the admissions board. Review your routine date/time and access credentials below (Google Chrome browser is required):
+          Your technical AI coding exam has been scheduled by the admissions board. Review your routine date/time and access credentials below:
         </p>
 
         <!-- Scheduled Routine & Credentials Card -->
@@ -303,16 +292,6 @@ def notify_assignment_scheduled(
               <li>Click <strong>Launch Secure Assessment Window</strong> to begin your assessment!</li>
             </ol>
           </div>
-        </div>
-
-        <!-- Web Browser Fallback Box -->
-        <div style="background: rgba(30, 41, 59, 0.4); border: 1px dashed rgba(255, 255, 255, 0.18); border-radius: 10px; padding: 16px 20px; text-align: center; margin: 20px 0;">
-          <p style="color: #9ca3af; font-size: 12px; margin: 0 0 8px 0;">
-            Or launch directly inside your web browser at your scheduled time:
-          </p>
-          <a href="{assignment_link}" style="color: #a5b4fc; text-decoration: underline; font-weight: 600; font-size: 13px;">
-            🚀 Open Assignment in Google Chrome Browser
-          </a>
         </div>
 
         <!-- Policy Guidelines -->
