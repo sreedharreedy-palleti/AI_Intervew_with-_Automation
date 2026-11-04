@@ -34,6 +34,7 @@ import AdminCourseRoster from '../pages/admin/AdminCourseRoster';
 import AdminUsers from '../pages/admin/AdminUsers';
 import AdminUserDetail from '../pages/admin/AdminUserDetail';
 import AdminAIChatbot from '../pages/admin/AdminAIChatbot';
+import AdminAppDownloads from '../pages/admin/AdminAppDownloads';
 
 // 404 Page
 import NotFound from '../pages/NotFound';
@@ -119,6 +120,7 @@ const AppRouter = () => {
         <Route path="courses/:courseId/roster" element={<AdminCourseRoster />} />
         <Route path="users" element={<AdminUsers />} />
         <Route path="users/:userId" element={<AdminUserDetail />} />
+        <Route path="app-downloads" element={<AdminAppDownloads />} />
         <Route path="ai-assistant" element={<AdminAIChatbot />} />
         <Route path="chatbot" element={<Navigate to="/admin/ai-assistant" replace />} />
       </Route>

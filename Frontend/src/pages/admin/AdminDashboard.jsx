@@ -322,19 +322,13 @@ const AdminDashboard = () => {
           </div>
         </Card>
 
-        {/* Metric 7: Windows Desktop App Downloads -> Switches to App Downloads Tab */}
+        {/* Metric 7: Windows Desktop App Downloads -> /admin/app-downloads */}
         <Card
           elevated
           className="metric-card-link"
           style={{ position: 'relative', overflow: 'hidden', borderLeft: '3px solid #0284c7' }}
-          onClick={() => {
-            setActiveTab('APP_DOWNLOADS');
-            const target = document.getElementById('dashboard-tables-section');
-            if (target) {
-              target.scrollIntoView({ behavior: 'smooth' });
-            }
-          }}
-          title="Click to view list of candidates who downloaded the Windows desktop application (.exe)"
+          onClick={() => navigate('/admin/app-downloads')}
+          title="Click to view full candidate list who downloaded the Windows desktop application (.exe)"
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
             <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>Windows App Downloads</span>
@@ -715,6 +709,25 @@ const AdminDashboard = () => {
                 <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
                   Total Downloads: <strong style={{ color: '#38bdf8' }}>{appDownloads.length}</strong> (Unique Candidates: <strong style={{ color: '#10b981' }}>{summary.unique_app_downloads || 0}</strong>)
                 </span>
+                <Link
+                  to="/admin/app-downloads"
+                  style={{
+                    padding: '0.45rem 0.85rem',
+                    background: 'rgba(99, 102, 241, 0.15)',
+                    border: '1px solid rgba(99, 102, 241, 0.35)',
+                    color: '#818cf8',
+                    borderRadius: 'var(--radius-md)',
+                    textDecoration: 'none',
+                    fontSize: '0.82rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    fontWeight: 600,
+                  }}
+                >
+                  <ExternalLink size={13} />
+                  <span>Full Screen Page</span>
+                </Link>
                 <button
                   onClick={fetchAppDownloads}
                   disabled={appDownloadsLoading}
