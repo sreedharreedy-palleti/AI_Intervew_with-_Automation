@@ -279,36 +279,14 @@ const EnrollmentTable = ({
                       )}
                     </td>
 
-                    {/* CRUD Action Buttons */}
+                    {/* Sequential Step-by-Step Action Buttons */}
                     <td style={{ padding: '0.85rem 0.75rem', textAlign: 'right' }}>
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
-                        {/* Schedule Assignment Button */}
-                        {shortlisted && (
-                          <button
-                            type="button"
-                            onClick={() => openScheduleModalSingle(student)}
-                            title="Schedule Assignment Date & Time + Send Gmail"
-                            className="btn btn-secondary btn-sm"
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.35rem',
-                              padding: '0.3rem 0.6rem',
-                              fontSize: '0.78rem',
-                              color: '#38bdf8',
-                              borderColor: 'rgba(56, 189, 248, 0.4)',
-                            }}
-                          >
-                            <Calendar size={13} />
-                            <span>Schedule</span>
-                          </button>
-                        )}
-
-                        {/* Edit Details Button */}
+                        {/* Step 1: Edit Details & Status */}
                         <button
                           type="button"
                           onClick={() => openEditModal(student)}
-                          title="Edit Status & Score"
+                          title="Step 1: Edit & Verify Candidate Status & Score"
                           className="btn btn-secondary btn-sm"
                           style={{
                             display: 'inline-flex',
@@ -318,11 +296,57 @@ const EnrollmentTable = ({
                             fontSize: '0.78rem',
                             color: '#c084fc',
                             borderColor: 'rgba(192, 132, 252, 0.4)',
+                            background: 'rgba(192, 132, 252, 0.08)',
                           }}
                         >
                           <Edit2 size={13} />
-                          <span>Edit</span>
+                          <span>Step 1: Edit</span>
                         </button>
+
+                        {/* Step 2: Schedule Assignment Date & Time */}
+                        {shortlisted ? (
+                          <button
+                            type="button"
+                            onClick={() => openScheduleModalSingle(student)}
+                            title="Step 2: Schedule Assignment Date & Time + Send Gmail"
+                            className="btn btn-secondary btn-sm"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.35rem',
+                              padding: '0.3rem 0.65rem',
+                              fontSize: '0.78rem',
+                              color: '#38bdf8',
+                              borderColor: 'rgba(56, 189, 248, 0.4)',
+                              background: student.assignment_datetime ? 'rgba(56, 189, 248, 0.15)' : 'rgba(56, 189, 248, 0.08)',
+                            }}
+                          >
+                            <Calendar size={13} />
+                            <span>{student.assignment_datetime ? 'Step 2: Reschedule' : 'Step 2: Schedule'}</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(student)}
+                            title="Step 2: Shortlist Candidate in Step 1 to unlock scheduling"
+                            className="btn btn-secondary btn-sm"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.35rem',
+                              padding: '0.3rem 0.65rem',
+                              fontSize: '0.78rem',
+                              color: 'var(--text-muted)',
+                              borderColor: 'rgba(255, 255, 255, 0.12)',
+                              background: 'rgba(255, 255, 255, 0.03)',
+                              opacity: 0.65,
+                              cursor: 'not-allowed',
+                            }}
+                          >
+                            <Calendar size={13} />
+                            <span>Step 2: Schedule</span>
+                          </button>
+                        )}
 
                         {/* Delete Enrollment Button */}
                         <button
@@ -336,6 +360,7 @@ const EnrollmentTable = ({
                             fontSize: '0.75rem',
                             color: '#fda4af',
                             borderColor: 'rgba(244, 63, 94, 0.3)',
+                            background: 'rgba(244, 63, 94, 0.06)',
                           }}
                         >
                           <Trash2 size={13} />

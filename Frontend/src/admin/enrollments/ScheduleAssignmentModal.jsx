@@ -21,12 +21,43 @@ const ScheduleAssignmentModal = ({
       onClose={onClose}
       title={
         scheduleTarget
-          ? `Schedule Assignment: ${scheduleTarget.name}`
-          : 'Schedule Assignment for Shortlisted Candidates'
+          ? `Step 2 of 2: Schedule Assignment: ${scheduleTarget.name}`
+          : 'Step 2: Schedule Assignment for Shortlisted Candidates'
       }
       maxWidth="640px"
     >
       <form onSubmit={handleScheduleSubmit}>
+        {/* Step Stepper Header */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0.65rem 0.85rem',
+          background: 'rgba(56, 189, 248, 0.08)',
+          border: '1px solid rgba(56, 189, 248, 0.25)',
+          borderRadius: 'var(--radius-md)',
+          marginBottom: '1rem',
+          fontSize: '0.82rem',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#38bdf8', fontWeight: 700 }}>
+            <span style={{
+              width: '20px',
+              height: '20px',
+              borderRadius: '50%',
+              background: '#38bdf8',
+              color: '#0b0f19',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '0.75rem',
+              fontWeight: 800,
+            }}>2</span>
+            <span>Step 2: Assignment Date, Time & Gmail Invitation</span>
+          </div>
+          <div style={{ color: '#10b981', fontSize: '0.75rem', fontWeight: 600 }}>
+            ✓ Step 1 Verified
+          </div>
+        </div>
         {/* Target summary banner */}
         <div
           style={{

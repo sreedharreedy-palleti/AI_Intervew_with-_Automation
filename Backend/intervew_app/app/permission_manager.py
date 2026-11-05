@@ -62,3 +62,4 @@ def preconfigure_browser_profile(user_data_dir: str, frontend_url: str) -> bool:
     except Exception as exc:
         print(f"[!] Warning: Could not preconfigure profile permissions: {exc}")
         return False
+

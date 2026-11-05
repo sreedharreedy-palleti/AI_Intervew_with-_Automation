@@ -195,8 +195,8 @@ const AdminEnrollments = () => {
   };
 
   // Submit Full Candidate Edit (UPDATE CRUD to Database)
-  const handleEditStatusSubmit = async (e) => {
-    e.preventDefault();
+  const handleEditStatusSubmit = async (e, proceedToSchedule = false) => {
+    if (e && e.preventDefault) e.preventDefault();
     if (!editingStudent) return;
 
     setEditLoading(true);
@@ -214,10 +214,15 @@ const AdminEnrollments = () => {
           unique_code: editFormData.unique_code,
         }
       );
-      toast.success(`Candidate "${editFormData.name}" updated in database successfully!`);
+      toast.success(`Step 1 Completed: Candidate "${editFormData.name}" updated!`);
+      const targetStudent = { ...editingStudent, ...editFormData };
       setEditingStudent(null);
       const updated = await adminApi.listCourses();
       setCourses(updated || []);
+
+      if (proceedToSchedule) {
+        openScheduleModalSingle(targetStudent);
+      }
     } catch (err) {
       toast.error(err.message || 'Failed to update candidate');
     } finally {
@@ -865,36 +870,14 @@ const AdminEnrollments = () => {
                         )}
                       </td>
 
-                      {/* CRUD Action Buttons */}
+                      {/* Sequential Step-by-Step Action Buttons */}
                       <td style={{ padding: '0.85rem 0.75rem', textAlign: 'right' }}>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
-                          {/* Schedule Assignment Button */}
-                          {shortlisted && (
-                            <button
-                              type="button"
-                              onClick={() => openScheduleModalSingle(student)}
-                              title="Schedule Assignment Date & Time + Send Gmail"
-                              className="btn btn-secondary btn-sm"
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '0.35rem',
-                                padding: '0.3rem 0.6rem',
-                                fontSize: '0.78rem',
-                                color: '#38bdf8',
-                                borderColor: 'rgba(56, 189, 248, 0.4)',
-                              }}
-                            >
-                              <Calendar size={13} />
-                              <span>Schedule</span>
-                            </button>
-                          )}
-
-                          {/* Edit Details Button */}
+                          {/* Step 1: Edit Details & Status */}
                           <button
                             type="button"
                             onClick={() => openEditModal(student)}
-                            title="Edit Status & Score"
+                            title="Step 1: Edit & Verify Candidate Status & Score"
                             className="btn btn-secondary btn-sm"
                             style={{
                               display: 'inline-flex',
@@ -904,11 +887,57 @@ const AdminEnrollments = () => {
                               fontSize: '0.78rem',
                               color: '#c084fc',
                               borderColor: 'rgba(192, 132, 252, 0.4)',
+                              background: 'rgba(192, 132, 252, 0.08)',
                             }}
                           >
                             <Edit2 size={13} />
-                            <span>Edit</span>
+                            <span>Step 1: Edit</span>
                           </button>
+
+                          {/* Step 2: Schedule Assignment Date & Time */}
+                          {shortlisted ? (
+                            <button
+                              type="button"
+                              onClick={() => openScheduleModalSingle(student)}
+                              title="Step 2: Schedule Assignment Date & Time + Send Gmail"
+                              className="btn btn-secondary btn-sm"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.35rem',
+                                padding: '0.3rem 0.65rem',
+                                fontSize: '0.78rem',
+                                color: '#38bdf8',
+                                borderColor: 'rgba(56, 189, 248, 0.4)',
+                                background: student.assignment_datetime ? 'rgba(56, 189, 248, 0.15)' : 'rgba(56, 189, 248, 0.08)',
+                              }}
+                            >
+                              <Calendar size={13} />
+                              <span>{student.assignment_datetime ? 'Step 2: Reschedule' : 'Step 2: Schedule'}</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => openEditModal(student)}
+                              title="Step 2: Shortlist Candidate in Step 1 to unlock scheduling"
+                              className="btn btn-secondary btn-sm"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.35rem',
+                                padding: '0.3rem 0.65rem',
+                                fontSize: '0.78rem',
+                                color: 'var(--text-muted)',
+                                borderColor: 'rgba(255, 255, 255, 0.12)',
+                                background: 'rgba(255, 255, 255, 0.03)',
+                                opacity: 0.65,
+                                cursor: 'not-allowed',
+                              }}
+                            >
+                              <Calendar size={13} />
+                              <span>Step 2: Schedule</span>
+                            </button>
+                          )}
 
                           {/* Delete Enrollment Button */}
                           <button
@@ -922,6 +951,7 @@ const AdminEnrollments = () => {
                               fontSize: '0.75rem',
                               color: '#fda4af',
                               borderColor: 'rgba(244, 63, 94, 0.3)',
+                              background: 'rgba(244, 63, 94, 0.06)',
                             }}
                           >
                             <Trash2 size={13} />
@@ -1055,14 +1085,45 @@ const AdminEnrollments = () => {
         </Modal>
       )}
 
-      {/* MODAL 2: Edit Candidate Details & Status (UPDATE CRUD to Database) */}
+      {/* MODAL 2: Step 1 of 2 - Edit Candidate Details & Status */}
       {editingStudent && (
         <Modal
           isOpen={!!editingStudent}
           onClose={() => setEditingStudent(null)}
-          title={`Edit Candidate: ${editingStudent.name}`}
+          title={`Step 1 of 2: Verify & Edit Candidate: ${editingStudent.name}`}
         >
-          <form onSubmit={handleEditStatusSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <form onSubmit={(e) => handleEditStatusSubmit(e, false)} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {/* Step Stepper Header */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '0.65rem 0.85rem',
+              background: 'rgba(192, 132, 252, 0.08)',
+              border: '1px solid rgba(192, 132, 252, 0.25)',
+              borderRadius: 'var(--radius-md)',
+              fontSize: '0.82rem',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#c084fc', fontWeight: 700 }}>
+                <span style={{
+                  width: '20px',
+                  height: '20px',
+                  borderRadius: '50%',
+                  background: '#c084fc',
+                  color: '#0b0f19',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.75rem',
+                  fontWeight: 800,
+                }}>1</span>
+                <span>Step 1: Candidate Verification & Status</span>
+              </div>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                Next ➜ Step 2: Schedule Assignment
+              </div>
+            </div>
+
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', margin: 0 }}>
               Course: <strong style={{ color: '#fff' }}>{editingStudent.course_title}</strong>
             </p>
@@ -1146,31 +1207,77 @@ const AdminEnrollments = () => {
               placeholder="e.g. EXAM-482910"
             />
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
               <Button type="button" variant="secondary" onClick={() => setEditingStudent(null)}>
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" isLoading={editLoading}>
-                Save Changes to Database
+              <Button type="submit" variant="secondary" isLoading={editLoading}>
+                Save Step 1 Only
               </Button>
+              {editFormData.application_status === 'shortlisted' && (
+                <Button
+                  type="button"
+                  variant="primary"
+                  isLoading={editLoading}
+                  onClick={(e) => handleEditStatusSubmit(e, true)}
+                  style={{
+                    background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                    borderColor: '#38bdf8',
+                  }}
+                >
+                  Save & Next: Schedule (Step 2) ➜
+                </Button>
+              )}
             </div>
           </form>
         </Modal>
       )}
 
-      {/* MODAL 3: Schedule Technical Assignment & Send Gmail */}
+      {/* MODAL 3: Step 2 of 2 - Schedule Technical Assignment & Send Gmail */}
       {isScheduleModalOpen && (
         <Modal
           isOpen={isScheduleModalOpen}
           onClose={() => setIsScheduleModalOpen(false)}
           title={
             scheduleTarget
-              ? `Schedule Assignment: ${scheduleTarget.name}`
-              : 'Schedule Assignment for Shortlisted Candidates'
+              ? `Step 2 of 2: Schedule Assignment: ${scheduleTarget.name}`
+              : 'Step 2: Schedule Assignment for Shortlisted Candidates'
           }
           maxWidth="640px"
         >
           <form onSubmit={handleScheduleSubmit}>
+            {/* Step Stepper Header */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '0.65rem 0.85rem',
+              background: 'rgba(56, 189, 248, 0.08)',
+              border: '1px solid rgba(56, 189, 248, 0.25)',
+              borderRadius: 'var(--radius-md)',
+              marginBottom: '1rem',
+              fontSize: '0.82rem',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#38bdf8', fontWeight: 700 }}>
+                <span style={{
+                  width: '20px',
+                  height: '20px',
+                  borderRadius: '50%',
+                  background: '#38bdf8',
+                  color: '#0b0f19',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.75rem',
+                  fontWeight: 800,
+                }}>2</span>
+                <span>Step 2: Assignment Date, Time & Gmail Invitation</span>
+              </div>
+              <div style={{ color: '#10b981', fontSize: '0.75rem', fontWeight: 600 }}>
+                ✓ Step 1 Verified
+              </div>
+            </div>
+
             {/* Target summary banner */}
             <div
               style={{

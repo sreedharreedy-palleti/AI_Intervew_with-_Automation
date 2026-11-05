@@ -228,3 +228,4 @@ def prompt_permissions_wizard(app_title: str = "AI Technical Interview", exam_ty
         result["granted"] = True
 
     return result
+

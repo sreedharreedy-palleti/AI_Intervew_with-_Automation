@@ -682,7 +682,29 @@ const AdminCourseRoster = () => {
                       {/* Action buttons (Schedule & Delete) */}
                       <td style={{ padding: '0.85rem 0.75rem', textAlign: 'right' }}>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
-                          {shortlisted && (
+                          {/* Sequential Step-by-Step Action Buttons */}
+                          {/* Step 1: Edit Details & Status */}
+                          <button
+                            onClick={() => openEditModal(student)}
+                            className="btn btn-secondary btn-sm"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.35rem',
+                              padding: '0.3rem 0.65rem',
+                              fontSize: '0.78rem',
+                              color: '#c084fc',
+                              borderColor: 'rgba(192, 132, 252, 0.4)',
+                              background: 'rgba(192, 132, 252, 0.08)',
+                            }}
+                            title="Step 1: Edit & Verify candidate details in database"
+                          >
+                            <Edit2 size={13} />
+                            <span>Step 1: Edit</span>
+                          </button>
+
+                          {/* Step 2: Schedule Assignment Date & Time */}
+                          {shortlisted ? (
                             <button
                               onClick={() => openScheduleModalSingle(student)}
                               className="btn btn-secondary btn-sm"
@@ -690,41 +712,50 @@ const AdminCourseRoster = () => {
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: '0.35rem',
-                                padding: '0.3rem 0.6rem',
+                                padding: '0.3rem 0.65rem',
                                 fontSize: '0.78rem',
                                 color: '#38bdf8',
                                 borderColor: 'rgba(56, 189, 248, 0.4)',
+                                background: student.assignment_datetime ? 'rgba(56, 189, 248, 0.15)' : 'rgba(56, 189, 248, 0.08)',
                               }}
-                              title="Schedule Assignment Date & Time + Send Gmail"
+                              title="Step 2: Schedule Assignment Date & Time + Send Gmail"
                             >
                               <Calendar size={13} />
-                              <span>Schedule</span>
+                              <span>{student.assignment_datetime ? 'Step 2: Reschedule' : 'Step 2: Schedule'}</span>
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => openEditModal(student)}
+                              className="btn btn-secondary btn-sm"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.35rem',
+                                padding: '0.3rem 0.65rem',
+                                fontSize: '0.78rem',
+                                color: 'var(--text-muted)',
+                                borderColor: 'rgba(255, 255, 255, 0.12)',
+                                background: 'rgba(255, 255, 255, 0.03)',
+                                opacity: 0.65,
+                                cursor: 'not-allowed',
+                              }}
+                              title="Step 2: Shortlist Candidate in Step 1 to unlock scheduling"
+                            >
+                              <Calendar size={13} />
+                              <span>Step 2: Schedule</span>
                             </button>
                           )}
-
-                          <button
-                            onClick={() => openEditModal(student)}
-                            className="btn btn-secondary btn-sm"
-                            style={{
-                              color: '#38bdf8',
-                              borderColor: 'rgba(56, 189, 248, 0.3)',
-                              fontSize: '0.75rem',
-                              padding: '0.3rem 0.55rem',
-                            }}
-                            title="Edit candidate details in database"
-                          >
-                            <Edit2 size={13} />
-                          </button>
 
                           <button
                             onClick={() => handleDeleteEnrollment(student.user_id, student.name)}
                             disabled={isBusy}
                             className="btn btn-secondary btn-sm"
                             style={{
-                              color: '#ef4444',
-                              borderColor: 'rgba(239, 68, 68, 0.3)',
-                              fontSize: '0.75rem',
                               padding: '0.3rem 0.55rem',
+                              fontSize: '0.75rem',
+                              color: '#fda4af',
+                              borderColor: 'rgba(244, 63, 94, 0.3)',
+                              background: 'rgba(244, 63, 94, 0.06)',
                             }}
                             title="Delete enrollment"
                           >
