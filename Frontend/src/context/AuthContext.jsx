@@ -9,11 +9,16 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Restore authenticated session from localStorage on app boot
+  // Restore authenticated session from sessionStorage on app boot
+  // Using sessionStorage ensures that closing the page/tab/browser automatically locks out / logs out both candidate and admin accounts.
   useEffect(() => {
     try {
-      const storedToken = localStorage.getItem('token');
-      const storedUser = localStorage.getItem('user');
+      // Clean up any legacy persistent localStorage session to guarantee automatic logout on page close
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+
+      const storedToken = sessionStorage.getItem('token');
+      const storedUser = sessionStorage.getItem('user');
 
       if (storedToken && storedUser) {
         setToken(storedToken);
@@ -21,8 +26,8 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (err) {
       console.error('Failed to restore session:', err);
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
     } finally {
       setIsLoading(false);
     }
@@ -37,12 +42,15 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-  // Save session state to localStorage
+  // Save session state to sessionStorage (ephemeral to active page session)
   const setSession = (newToken, newUser) => {
     setToken(newToken);
     setUser(newUser);
-    localStorage.setItem('token', newToken);
-    localStorage.setItem('user', JSON.stringify(newUser));
+    sessionStorage.setItem('token', newToken);
+    sessionStorage.setItem('user', JSON.stringify(newUser));
+    // Proactively clear localStorage
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
   };
 
   // Candidate login
@@ -70,9 +78,11 @@ export const AuthProvider = ({ children }) => {
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
+    sessionStorage.clear();
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    sessionStorage.clear();
   }, []);
 
   const value = {

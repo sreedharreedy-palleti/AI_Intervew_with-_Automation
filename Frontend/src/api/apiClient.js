@@ -15,7 +15,7 @@ const apiClient = axios.create({
 // Request Interceptor: Attach JWT bearer token & handle multipart FormData
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token') || localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -61,6 +61,9 @@ apiClient.interceptors.response.use(
       if (error.response.status === 401) {
         const currentPath = window.location.pathname;
         if (!currentPath.includes('/login') && !currentPath.includes('/register')) {
+          sessionStorage.removeItem('token');
+          sessionStorage.removeItem('user');
+          sessionStorage.clear();
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           window.dispatchEvent(new Event('auth:unauthorized'));
