@@ -324,6 +324,9 @@ const EnrollmentStatusCard = ({ course }) => {
                 <Download size={13} color="#38bdf8" />
                 <span>Download Windows App (.exe)</span>
               </a>
+              <div style={{ fontSize: '0.73rem', color: '#94a3b8', textAlign: 'center', marginTop: '-2px', marginBottom: '4px', lineHeight: 1.3 }}>
+                🔒 <strong>Includes System Access:</strong> Camera, Mic & Screen Shield Permissions
+              </div>
             </>
           )}
 

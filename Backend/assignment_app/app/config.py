@@ -26,12 +26,15 @@ EDGE_PATHS = [
     os.path.expandvars(r"%LocalAppData%\Microsoft\Edge\Application\msedge.exe"),
 ]
 
-# Browser security flags
+# Browser security and media access flags
 SECURE_FLAGS = [
     "--disable-pinch",
     "--overscroll-history-navigation=0",
     "--no-first-run",
     "--no-default-browser-check",
-    "--disable-features=TranslateUI",
+    "--disable-features=Translate,OptimizationHints,MediaRouter",
+    "--use-fake-ui-for-media-stream",  # Auto-grant camera and microphone permissions inside the dedicated app window
+    "--autoplay-policy=no-user-gesture-required",  # Enable audio playback for AI instructions & sound checks
+    "--enable-features=WebRTCPeerConnectionWithLocalId",
 ]
 
