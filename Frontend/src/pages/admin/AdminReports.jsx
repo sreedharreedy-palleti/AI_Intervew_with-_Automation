@@ -532,253 +532,90 @@ const AdminReports = () => {
           <div
             style={{
               display: 'flex',
-              flexDirection: 'column',
-              gap: '0.85rem',
-              marginBottom: '1.25rem',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '1rem',
+              gap: '1rem',
+              flexWrap: 'wrap',
             }}
           >
-            {/* Top row: Search bar & Export Excel */}
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                gap: '1rem',
-                flexWrap: 'wrap',
-              }}
-            >
-              <div style={{ position: 'relative', width: '100%', maxWidth: '380px' }}>
-                <Search
-                  size={15}
-                  style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}
-                />
-                <input
-                  type="text"
-                  placeholder="Search candidate name, gmail, or course..."
-                  value={assignmentSearch}
-                  onChange={(e) => setAssignmentSearch(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.55rem 0.85rem 0.55rem 2.25rem',
-                    background: '#0f172a',
-                    border: '1px solid rgba(255, 255, 255, 0.15)',
-                    borderRadius: '8px',
-                    color: '#ffffff',
-                    fontSize: '0.85rem',
-                  }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                {/* Dropdown Select with explicit high-contrast colors and dark color-scheme */}
-                <select
-                  value={assignmentFilter}
-                  onChange={(e) => setAssignmentFilter(e.target.value)}
-                  className="custom-filter-select"
-                  style={{
-                    padding: '0.5rem 0.85rem',
-                    background: '#0f172a',
-                    color: '#f8fafc',
-                    colorScheme: 'dark',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    borderRadius: '8px',
-                    fontSize: '0.84rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    outline: 'none',
-                  }}
-                >
-                  <option style={{ background: '#0f172a', color: '#f8fafc' }} value="ALL">
-                    All Statuses ({assignmentReports.length})
-                  </option>
-                  <option style={{ background: '#0f172a', color: '#34d399', fontWeight: 600 }} value="QUALIFIED">
-                    ✓ Qualified Only (≥ 50%)
-                  </option>
-                  <option style={{ background: '#0f172a', color: '#fb7185', fontWeight: 600 }} value="DISQUALIFIED">
-                    ✗ Not Qualified (&lt; 50%)
-                  </option>
-                  <option style={{ background: '#0f172a', color: '#38bdf8', fontWeight: 600 }} value="SHORTLISTED">
-                    ★ Interview Shortlisted
-                  </option>
-                  <option style={{ background: '#0f172a', color: '#fb923c', fontWeight: 600 }} value="NOT_SHORTLISTED">
-                    ⊘ Not Shortlisted
-                  </option>
-                </select>
-
-                <button
-                  type="button"
-                  onClick={handleExportAssignmentsToExcel}
-                  className="btn btn-secondary btn-sm"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.45rem',
-                    color: '#38bdf8',
-                    borderColor: 'rgba(56, 189, 248, 0.4)',
-                    background: 'rgba(56, 189, 248, 0.08)',
-                    padding: '0.5rem 1rem',
-                    borderRadius: '8px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  <FileSpreadsheet size={15} color="#38bdf8" />
-                  <span>Export Assignment Excel (.xlsx)</span>
-                </button>
-              </div>
+            <div style={{ position: 'relative', width: '100%', maxWidth: '380px' }}>
+              <Search
+                size={15}
+                style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}
+              />
+              <input
+                type="text"
+                placeholder="Search candidate name, gmail, or course..."
+                value={assignmentSearch}
+                onChange={(e) => setAssignmentSearch(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.55rem 0.85rem 0.55rem 2.25rem',
+                  background: '#0f172a',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: '8px',
+                  color: '#ffffff',
+                  fontSize: '0.85rem',
+                }}
+              />
             </div>
 
-            {/* Filter Pills: High contrast, distinct colors, crystal clear words */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                flexWrap: 'wrap',
-                paddingTop: '0.2rem',
-              }}
-            >
-              <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 600, marginRight: '0.25rem' }}>
-                Quick Filter:
-              </span>
-
-              {/* 1) All Statuses */}
-              <button
-                type="button"
-                className="filter-pill-btn"
-                onClick={() => setAssignmentFilter('ALL')}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              {/* Dropdown Select with explicit high-contrast colors and dark color-scheme */}
+              <select
+                value={assignmentFilter}
+                onChange={(e) => setAssignmentFilter(e.target.value)}
+                className="custom-filter-select"
                 style={{
-                  background: assignmentFilter === 'ALL' ? '#2563eb' : '#1e293b',
-                  color: assignmentFilter === 'ALL' ? '#ffffff' : '#cbd5e1',
-                  border: assignmentFilter === 'ALL' ? '1px solid #3b82f6' : '1px solid rgba(255, 255, 255, 0.12)',
-                  fontWeight: assignmentFilter === 'ALL' ? 700 : 500,
+                  padding: '0.55rem 0.85rem',
+                  background: '#0f172a',
+                  color: '#f8fafc',
+                  colorScheme: 'dark',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: '8px',
+                  fontSize: '0.84rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  outline: 'none',
                 }}
               >
-                <span>All Candidates</span>
-                <span
-                  style={{
-                    padding: '0.1rem 0.45rem',
-                    borderRadius: '9999px',
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    background: assignmentFilter === 'ALL' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.08)',
-                    color: '#ffffff',
-                  }}
-                >
-                  {assignmentReports.length}
-                </span>
-              </button>
+                <option style={{ background: '#0f172a', color: '#f8fafc' }} value="ALL">
+                  All Statuses ({assignmentReports.length})
+                </option>
+                <option style={{ background: '#0f172a', color: '#34d399', fontWeight: 600 }} value="QUALIFIED">
+                  ✓ Qualified Only (≥ 50%)
+                </option>
+                <option style={{ background: '#0f172a', color: '#fb7185', fontWeight: 600 }} value="DISQUALIFIED">
+                  ✗ Not Qualified (&lt; 50%)
+                </option>
+                <option style={{ background: '#0f172a', color: '#38bdf8', fontWeight: 600 }} value="SHORTLISTED">
+                  ★ Interview Shortlisted
+                </option>
+                <option style={{ background: '#0f172a', color: '#fb923c', fontWeight: 600 }} value="NOT_SHORTLISTED">
+                  ⊘ Not Shortlisted
+                </option>
+              </select>
 
-              {/* 2) Qualified Only (>= 50%) */}
               <button
                 type="button"
-                className="filter-pill-btn"
-                onClick={() => setAssignmentFilter('QUALIFIED')}
+                onClick={handleExportAssignmentsToExcel}
+                className="btn btn-secondary btn-sm"
                 style={{
-                  background: assignmentFilter === 'QUALIFIED' ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'rgba(16, 185, 129, 0.14)',
-                  color: assignmentFilter === 'QUALIFIED' ? '#ffffff' : '#34d399',
-                  border: assignmentFilter === 'QUALIFIED' ? '1px solid #10b981' : '1px solid rgba(16, 185, 129, 0.4)',
-                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
+                  color: '#38bdf8',
+                  borderColor: 'rgba(56, 189, 248, 0.4)',
+                  background: 'rgba(56, 189, 248, 0.08)',
+                  padding: '0.55rem 1rem',
+                  borderRadius: '8px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
                 }}
               >
-                <CheckCircle size={13} color={assignmentFilter === 'QUALIFIED' ? '#ffffff' : '#34d399'} />
-                <span>Qualified (≥ 50%)</span>
-                <span
-                  style={{
-                    padding: '0.1rem 0.45rem',
-                    borderRadius: '9999px',
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    background: assignmentFilter === 'QUALIFIED' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(16, 185, 129, 0.25)',
-                    color: assignmentFilter === 'QUALIFIED' ? '#ffffff' : '#34d399',
-                  }}
-                >
-                  {assignmentStats.qualified}
-                </span>
-              </button>
-
-              {/* 3) Not Qualified (< 50%) */}
-              <button
-                type="button"
-                className="filter-pill-btn"
-                onClick={() => setAssignmentFilter('DISQUALIFIED')}
-                style={{
-                  background: assignmentFilter === 'DISQUALIFIED' ? 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' : 'rgba(244, 63, 94, 0.14)',
-                  color: assignmentFilter === 'DISQUALIFIED' ? '#ffffff' : '#fb7185',
-                  border: assignmentFilter === 'DISQUALIFIED' ? '1px solid #f43f5e' : '1px solid rgba(244, 63, 94, 0.4)',
-                  fontWeight: 700,
-                }}
-              >
-                <XCircle size={13} color={assignmentFilter === 'DISQUALIFIED' ? '#ffffff' : '#fb7185'} />
-                <span>Not Qualified (&lt; 50%)</span>
-                <span
-                  style={{
-                    padding: '0.1rem 0.45rem',
-                    borderRadius: '9999px',
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    background: assignmentFilter === 'DISQUALIFIED' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(244, 63, 94, 0.25)',
-                    color: assignmentFilter === 'DISQUALIFIED' ? '#ffffff' : '#fb7185',
-                  }}
-                >
-                  {assignmentStats.disqualified}
-                </span>
-              </button>
-
-              {/* 4) Interview Shortlisted */}
-              <button
-                type="button"
-                className="filter-pill-btn"
-                onClick={() => setAssignmentFilter('SHORTLISTED')}
-                style={{
-                  background: assignmentFilter === 'SHORTLISTED' ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : 'rgba(56, 189, 248, 0.14)',
-                  color: assignmentFilter === 'SHORTLISTED' ? '#ffffff' : '#38bdf8',
-                  border: assignmentFilter === 'SHORTLISTED' ? '1px solid #0284c7' : '1px solid rgba(56, 189, 248, 0.4)',
-                  fontWeight: 700,
-                }}
-              >
-                <UserCheck size={13} color={assignmentFilter === 'SHORTLISTED' ? '#ffffff' : '#38bdf8'} />
-                <span>Interview Shortlisted</span>
-                <span
-                  style={{
-                    padding: '0.1rem 0.45rem',
-                    borderRadius: '9999px',
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    background: assignmentFilter === 'SHORTLISTED' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(56, 189, 248, 0.25)',
-                    color: assignmentFilter === 'SHORTLISTED' ? '#ffffff' : '#38bdf8',
-                  }}
-                >
-                  {assignmentStats.shortlisted}
-                </span>
-              </button>
-
-              {/* 5) Not Shortlisted */}
-              <button
-                type="button"
-                className="filter-pill-btn"
-                onClick={() => setAssignmentFilter('NOT_SHORTLISTED')}
-                style={{
-                  background: assignmentFilter === 'NOT_SHORTLISTED' ? 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)' : 'rgba(251, 146, 60, 0.14)',
-                  color: assignmentFilter === 'NOT_SHORTLISTED' ? '#ffffff' : '#fb923c',
-                  border: assignmentFilter === 'NOT_SHORTLISTED' ? '1px solid #ea580c' : '1px solid rgba(251, 146, 60, 0.4)',
-                  fontWeight: 700,
-                }}
-              >
-                <UserX size={13} color={assignmentFilter === 'NOT_SHORTLISTED' ? '#ffffff' : '#fb923c'} />
-                <span>Not Shortlisted</span>
-                <span
-                  style={{
-                    padding: '0.1rem 0.45rem',
-                    borderRadius: '9999px',
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    background: assignmentFilter === 'NOT_SHORTLISTED' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(251, 146, 60, 0.25)',
-                    color: assignmentFilter === 'NOT_SHORTLISTED' ? '#ffffff' : '#fb923c',
-                  }}
-                >
-                  {assignmentStats.notShortlisted}
-                </span>
+                <FileSpreadsheet size={15} color="#38bdf8" />
+                <span>Export Assignment Excel (.xlsx)</span>
               </button>
             </div>
           </div>
