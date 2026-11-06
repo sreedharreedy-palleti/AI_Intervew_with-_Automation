@@ -43,6 +43,11 @@ export const API_ROUTES = {
   // Admin Live Analytics & Visualizations
   ADMIN_ANALYTICS_DASHBOARD: '/api/v1/admin/analytics/dashboard',
   ADMIN_APP_DOWNLOADS: '/api/v1/admin/analytics/app-downloads',
+
+  // Admin AI Evaluation & Reports
+  ADMIN_ASSIGNMENT_REPORTS: '/api/v1/admin/reports/assignments',
+  ADMIN_ASSIGNMENT_DECISION: '/api/v1/admin/reports/assignments/decision',
+  ADMIN_INTERVIEW_REPORTS: '/api/v1/admin/reports/interviews',
 };
 
 export const USER_ROLES = {

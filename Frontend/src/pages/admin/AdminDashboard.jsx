@@ -37,6 +37,7 @@ import {
   Layers,
   Download,
   Laptop,
+  FileBarChart,
 } from 'lucide-react';
 import { formatDate } from '../../utils/formatters';
 
@@ -341,6 +342,28 @@ const AdminDashboard = () => {
           </div>
           <div style={{ marginTop: '0.6rem', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
             <strong style={{ color: '#38bdf8' }}>{summary.unique_app_downloads || 0}</strong> unique candidate{summary.unique_app_downloads === 1 ? '' : 's'} downloaded
+          </div>
+        </Card>
+
+        {/* Metric 8: AI Evaluation Reports -> /admin/reports */}
+        <Card
+          elevated
+          className="metric-card-link"
+          style={{ position: 'relative', overflow: 'hidden', borderLeft: '3px solid #8b5cf6' }}
+          onClick={() => navigate('/admin/reports')}
+          title="Click to view AI Assignment & Interview performance reports with Excel export"
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
+            <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>AI Evaluation Reports</span>
+            <div style={{ padding: '0.45rem', borderRadius: '8px', background: 'rgba(139, 92, 246, 0.15)', color: '#a78bfa' }}>
+              <FileBarChart size={18} />
+            </div>
+          </div>
+          <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#a78bfa', lineHeight: 1.1 }}>
+            Reports
+          </div>
+          <div style={{ marginTop: '0.6rem', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+            Assignment & Interview Results · Excel Export
           </div>
         </Card>
       </div>

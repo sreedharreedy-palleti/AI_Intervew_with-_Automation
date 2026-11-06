@@ -126,4 +126,20 @@ export const adminApi = {
     const res = await apiClient.get(API_ROUTES.ADMIN_APP_DOWNLOADS);
     return res.data;
   },
+
+  // --- AI Evaluation & Reports ---
+  getAssignmentReports: async () => {
+    const res = await apiClient.get(API_ROUTES.ADMIN_ASSIGNMENT_REPORTS);
+    return res.data;
+  },
+
+  updateAssignmentDecision: async (payload) => {
+    const res = await apiClient.post(API_ROUTES.ADMIN_ASSIGNMENT_DECISION, payload);
+    return res.data;
+  },
+
+  getInterviewReports: async () => {
+    const res = await apiClient.get(API_ROUTES.ADMIN_INTERVIEW_REPORTS);
+    return res.data;
+  },
 };

@@ -11,6 +11,7 @@ import {
   ShieldAlert,
   UserCheck,
   Download,
+  FileBarChart,
 } from 'lucide-react';
 import Badge from './Badge';
 
@@ -43,6 +44,11 @@ const Sidebar = () => {
       to: '/admin/users',
       label: 'Candidate Management',
       icon: <Users size={18} />,
+    },
+    {
+      to: '/admin/reports',
+      label: 'AI Evaluation Reports',
+      icon: <FileBarChart size={18} />,
     },
     {
       to: '/admin/app-downloads',

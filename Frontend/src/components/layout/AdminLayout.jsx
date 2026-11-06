@@ -8,6 +8,7 @@ const AdminLayout = () => {
   const location = useLocation();
 
   const getPageTitle = () => {
+    if (location.pathname.includes('/admin/reports')) return 'AI Evaluation & Performance Reports';
     if (location.pathname.includes('/admin/enrollments')) return 'Course Enrollments & Shortlisting';
     if (location.pathname.includes('/admin/courses')) return 'Course & Roster Management';
     if (location.pathname.includes('/admin/users')) return 'Candidate & User Administration';
