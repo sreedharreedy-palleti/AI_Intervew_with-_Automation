@@ -274,9 +274,10 @@ const AdminReports = () => {
   const assignmentStats = useMemo(() => {
     const total = assignmentReports.length;
     const qualified = assignmentReports.filter((r) => r.qualifies_for_interview).length;
+    const disqualified = total - qualified;
     const shortlisted = assignmentReports.filter((r) => r.interview_shortlisted === true).length;
     const notShortlisted = assignmentReports.filter((r) => r.interview_shortlisted === false).length;
-    return { total, qualified, shortlisted, notShortlisted };
+    return { total, qualified, disqualified, shortlisted, notShortlisted };
   }, [assignmentReports]);
 
   const interviewStats = useMemo(() => {
@@ -299,6 +300,42 @@ const AdminReports = () => {
 
   return (
     <div style={{ padding: '1.75rem', maxWidth: '1440px', margin: '0 auto', color: '#fff' }}>
+      <style>{`
+        .filter-pill-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.45rem;
+          padding: 0.42rem 0.85rem;
+          border-radius: 9999px;
+          font-size: 0.82rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          border: 1px solid transparent;
+          user-select: none;
+        }
+        .filter-pill-btn:hover {
+          transform: translateY(-1px);
+        }
+        .filter-pill-btn:active {
+          transform: translateY(0);
+        }
+        select.custom-filter-select {
+          color-scheme: dark !important;
+          background-color: #0f172a !important;
+          color: #f8fafc !important;
+        }
+        select.custom-filter-select option {
+          background-color: #0f172a !important;
+          color: #f8fafc !important;
+          padding: 8px 12px !important;
+        }
+        select.custom-filter-select option:checked,
+        select.custom-filter-select option:hover {
+          background-color: #1e293b !important;
+          color: #38bdf8 !important;
+        }
+      `}</style>
       {/* Page Header */}
       <div
         style={{
@@ -495,14 +532,21 @@ const AdminReports = () => {
           <div
             style={{
               display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '1rem',
-              gap: '1rem',
-              flexWrap: 'wrap',
+              flexDirection: 'column',
+              gap: '0.85rem',
+              marginBottom: '1.25rem',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: '280px' }}>
+            {/* Top row: Search bar & Export Excel */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '1rem',
+                flexWrap: 'wrap',
+              }}
+            >
               <div style={{ position: 'relative', width: '100%', maxWidth: '380px' }}>
                 <Search
                   size={15}
@@ -516,51 +560,227 @@ const AdminReports = () => {
                   style={{
                     width: '100%',
                     padding: '0.55rem 0.85rem 0.55rem 2.25rem',
-                    background: 'var(--bg-surface-elevated)',
-                    border: '1px solid var(--border-medium)',
-                    borderRadius: 'var(--radius-md)',
-                    color: '#fff',
+                    background: '#0f172a',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    borderRadius: '8px',
+                    color: '#ffffff',
                     fontSize: '0.85rem',
                   }}
                 />
               </div>
 
-              <select
-                value={assignmentFilter}
-                onChange={(e) => setAssignmentFilter(e.target.value)}
-                style={{
-                  padding: '0.55rem 0.85rem',
-                  background: 'var(--bg-surface-elevated)',
-                  border: '1px solid var(--border-medium)',
-                  borderRadius: 'var(--radius-md)',
-                  color: '#fff',
-                  fontSize: '0.85rem',
-                }}
-              >
-                <option value="ALL">All Statuses ({assignmentReports.length})</option>
-                <option value="QUALIFIED">Qualified Only (≥ 50%)</option>
-                <option value="DISQUALIFIED">Not Qualified (&lt; 50%)</option>
-                <option value="SHORTLISTED">Interview Shortlisted</option>
-                <option value="NOT_SHORTLISTED">Not Shortlisted</option>
-              </select>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                {/* Dropdown Select with explicit high-contrast colors and dark color-scheme */}
+                <select
+                  value={assignmentFilter}
+                  onChange={(e) => setAssignmentFilter(e.target.value)}
+                  className="custom-filter-select"
+                  style={{
+                    padding: '0.5rem 0.85rem',
+                    background: '#0f172a',
+                    color: '#f8fafc',
+                    colorScheme: 'dark',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: '8px',
+                    fontSize: '0.84rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    outline: 'none',
+                  }}
+                >
+                  <option style={{ background: '#0f172a', color: '#f8fafc' }} value="ALL">
+                    All Statuses ({assignmentReports.length})
+                  </option>
+                  <option style={{ background: '#0f172a', color: '#34d399', fontWeight: 600 }} value="QUALIFIED">
+                    ✓ Qualified Only (≥ 50%)
+                  </option>
+                  <option style={{ background: '#0f172a', color: '#fb7185', fontWeight: 600 }} value="DISQUALIFIED">
+                    ✗ Not Qualified (&lt; 50%)
+                  </option>
+                  <option style={{ background: '#0f172a', color: '#38bdf8', fontWeight: 600 }} value="SHORTLISTED">
+                    ★ Interview Shortlisted
+                  </option>
+                  <option style={{ background: '#0f172a', color: '#fb923c', fontWeight: 600 }} value="NOT_SHORTLISTED">
+                    ⊘ Not Shortlisted
+                  </option>
+                </select>
+
+                <button
+                  type="button"
+                  onClick={handleExportAssignmentsToExcel}
+                  className="btn btn-secondary btn-sm"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
+                    color: '#38bdf8',
+                    borderColor: 'rgba(56, 189, 248, 0.4)',
+                    background: 'rgba(56, 189, 248, 0.08)',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '8px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <FileSpreadsheet size={15} color="#38bdf8" />
+                  <span>Export Assignment Excel (.xlsx)</span>
+                </button>
+              </div>
             </div>
 
-            <button
-              type="button"
-              onClick={handleExportAssignmentsToExcel}
-              className="btn btn-secondary btn-sm"
+            {/* Filter Pills: High contrast, distinct colors, crystal clear words */}
+            <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.45rem',
-                color: '#38bdf8',
-                borderColor: 'rgba(56, 189, 248, 0.4)',
-                background: 'rgba(56, 189, 248, 0.08)',
+                gap: '0.5rem',
+                flexWrap: 'wrap',
+                paddingTop: '0.2rem',
               }}
             >
-              <FileSpreadsheet size={15} color="#38bdf8" />
-              <span>Export Assignment Excel (.xlsx)</span>
-            </button>
+              <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 600, marginRight: '0.25rem' }}>
+                Quick Filter:
+              </span>
+
+              {/* 1) All Statuses */}
+              <button
+                type="button"
+                className="filter-pill-btn"
+                onClick={() => setAssignmentFilter('ALL')}
+                style={{
+                  background: assignmentFilter === 'ALL' ? '#2563eb' : '#1e293b',
+                  color: assignmentFilter === 'ALL' ? '#ffffff' : '#cbd5e1',
+                  border: assignmentFilter === 'ALL' ? '1px solid #3b82f6' : '1px solid rgba(255, 255, 255, 0.12)',
+                  fontWeight: assignmentFilter === 'ALL' ? 700 : 500,
+                }}
+              >
+                <span>All Candidates</span>
+                <span
+                  style={{
+                    padding: '0.1rem 0.45rem',
+                    borderRadius: '9999px',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    background: assignmentFilter === 'ALL' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.08)',
+                    color: '#ffffff',
+                  }}
+                >
+                  {assignmentReports.length}
+                </span>
+              </button>
+
+              {/* 2) Qualified Only (>= 50%) */}
+              <button
+                type="button"
+                className="filter-pill-btn"
+                onClick={() => setAssignmentFilter('QUALIFIED')}
+                style={{
+                  background: assignmentFilter === 'QUALIFIED' ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'rgba(16, 185, 129, 0.14)',
+                  color: assignmentFilter === 'QUALIFIED' ? '#ffffff' : '#34d399',
+                  border: assignmentFilter === 'QUALIFIED' ? '1px solid #10b981' : '1px solid rgba(16, 185, 129, 0.4)',
+                  fontWeight: 700,
+                }}
+              >
+                <CheckCircle size={13} color={assignmentFilter === 'QUALIFIED' ? '#ffffff' : '#34d399'} />
+                <span>Qualified (≥ 50%)</span>
+                <span
+                  style={{
+                    padding: '0.1rem 0.45rem',
+                    borderRadius: '9999px',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    background: assignmentFilter === 'QUALIFIED' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(16, 185, 129, 0.25)',
+                    color: assignmentFilter === 'QUALIFIED' ? '#ffffff' : '#34d399',
+                  }}
+                >
+                  {assignmentStats.qualified}
+                </span>
+              </button>
+
+              {/* 3) Not Qualified (< 50%) */}
+              <button
+                type="button"
+                className="filter-pill-btn"
+                onClick={() => setAssignmentFilter('DISQUALIFIED')}
+                style={{
+                  background: assignmentFilter === 'DISQUALIFIED' ? 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' : 'rgba(244, 63, 94, 0.14)',
+                  color: assignmentFilter === 'DISQUALIFIED' ? '#ffffff' : '#fb7185',
+                  border: assignmentFilter === 'DISQUALIFIED' ? '1px solid #f43f5e' : '1px solid rgba(244, 63, 94, 0.4)',
+                  fontWeight: 700,
+                }}
+              >
+                <XCircle size={13} color={assignmentFilter === 'DISQUALIFIED' ? '#ffffff' : '#fb7185'} />
+                <span>Not Qualified (&lt; 50%)</span>
+                <span
+                  style={{
+                    padding: '0.1rem 0.45rem',
+                    borderRadius: '9999px',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    background: assignmentFilter === 'DISQUALIFIED' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(244, 63, 94, 0.25)',
+                    color: assignmentFilter === 'DISQUALIFIED' ? '#ffffff' : '#fb7185',
+                  }}
+                >
+                  {assignmentStats.disqualified}
+                </span>
+              </button>
+
+              {/* 4) Interview Shortlisted */}
+              <button
+                type="button"
+                className="filter-pill-btn"
+                onClick={() => setAssignmentFilter('SHORTLISTED')}
+                style={{
+                  background: assignmentFilter === 'SHORTLISTED' ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : 'rgba(56, 189, 248, 0.14)',
+                  color: assignmentFilter === 'SHORTLISTED' ? '#ffffff' : '#38bdf8',
+                  border: assignmentFilter === 'SHORTLISTED' ? '1px solid #0284c7' : '1px solid rgba(56, 189, 248, 0.4)',
+                  fontWeight: 700,
+                }}
+              >
+                <UserCheck size={13} color={assignmentFilter === 'SHORTLISTED' ? '#ffffff' : '#38bdf8'} />
+                <span>Interview Shortlisted</span>
+                <span
+                  style={{
+                    padding: '0.1rem 0.45rem',
+                    borderRadius: '9999px',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    background: assignmentFilter === 'SHORTLISTED' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(56, 189, 248, 0.25)',
+                    color: assignmentFilter === 'SHORTLISTED' ? '#ffffff' : '#38bdf8',
+                  }}
+                >
+                  {assignmentStats.shortlisted}
+                </span>
+              </button>
+
+              {/* 5) Not Shortlisted */}
+              <button
+                type="button"
+                className="filter-pill-btn"
+                onClick={() => setAssignmentFilter('NOT_SHORTLISTED')}
+                style={{
+                  background: assignmentFilter === 'NOT_SHORTLISTED' ? 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)' : 'rgba(251, 146, 60, 0.14)',
+                  color: assignmentFilter === 'NOT_SHORTLISTED' ? '#ffffff' : '#fb923c',
+                  border: assignmentFilter === 'NOT_SHORTLISTED' ? '1px solid #ea580c' : '1px solid rgba(251, 146, 60, 0.4)',
+                  fontWeight: 700,
+                }}
+              >
+                <UserX size={13} color={assignmentFilter === 'NOT_SHORTLISTED' ? '#ffffff' : '#fb923c'} />
+                <span>Not Shortlisted</span>
+                <span
+                  style={{
+                    padding: '0.1rem 0.45rem',
+                    borderRadius: '9999px',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    background: assignmentFilter === 'NOT_SHORTLISTED' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(251, 146, 60, 0.25)',
+                    color: assignmentFilter === 'NOT_SHORTLISTED' ? '#ffffff' : '#fb923c',
+                  }}
+                >
+                  {assignmentStats.notShortlisted}
+                </span>
+              </button>
+            </div>
           </div>
 
           {/* Assignment Table */}
@@ -659,33 +879,41 @@ const AdminReports = () => {
                           {/* Qualifies for Next Round */}
                           <td style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>
                             {isPassed ? (
-                              <div
+                              <span
                                 style={{
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   gap: '0.35rem',
-                                  color: '#10b981',
+                                  padding: '0.3rem 0.75rem',
+                                  borderRadius: '9999px',
+                                  fontSize: '0.78rem',
                                   fontWeight: 700,
-                                  fontSize: '0.8rem',
+                                  background: 'rgba(16, 185, 129, 0.15)',
+                                  color: '#34d399',
+                                  border: '1px solid rgba(16, 185, 129, 0.4)',
                                 }}
                               >
-                                <CheckCircle size={14} color="#10b981" />
+                                <CheckCircle size={13} color="#34d399" />
                                 <span>Qualifies (Score ≥ 50%)</span>
-                              </div>
+                              </span>
                             ) : (
-                              <div
+                              <span
                                 style={{
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   gap: '0.35rem',
-                                  color: '#f43f5e',
-                                  fontWeight: 600,
-                                  fontSize: '0.8rem',
+                                  padding: '0.3rem 0.75rem',
+                                  borderRadius: '9999px',
+                                  fontSize: '0.78rem',
+                                  fontWeight: 700,
+                                  background: 'rgba(244, 63, 94, 0.15)',
+                                  color: '#fb7185',
+                                  border: '1px solid rgba(244, 63, 94, 0.4)',
                                 }}
                               >
-                                <XCircle size={14} color="#f43f5e" />
-                                <span>Not Qualified (Below 50%)</span>
-                              </div>
+                                <XCircle size={13} color="#fb7185" />
+                                <span>Not Qualified (&lt; 50%)</span>
+                              </span>
                             )}
                           </td>
 
@@ -694,56 +922,56 @@ const AdminReports = () => {
                             {report.interview_shortlisted === true ? (
                               <span
                                 style={{
-                                  padding: '0.25rem 0.65rem',
+                                  padding: '0.3rem 0.75rem',
                                   borderRadius: '9999px',
                                   fontSize: '0.78rem',
                                   fontWeight: 700,
                                   background: 'rgba(56, 189, 248, 0.15)',
                                   color: '#38bdf8',
-                                  border: '1px solid rgba(56, 189, 248, 0.35)',
+                                  border: '1px solid rgba(56, 189, 248, 0.4)',
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   gap: '0.35rem',
                                 }}
                               >
-                                <Sparkles size={12} />
-                                Shortlisted for Interview
+                                <Sparkles size={12} color="#38bdf8" />
+                                <span>Shortlisted for Interview</span>
                               </span>
                             ) : report.interview_shortlisted === false ? (
                               <span
                                 style={{
-                                  padding: '0.25rem 0.65rem',
+                                  padding: '0.3rem 0.75rem',
                                   borderRadius: '9999px',
                                   fontSize: '0.78rem',
                                   fontWeight: 700,
-                                  background: 'rgba(244, 63, 94, 0.12)',
-                                  color: '#fda4af',
-                                  border: '1px solid rgba(244, 63, 94, 0.3)',
+                                  background: 'rgba(251, 146, 60, 0.15)',
+                                  color: '#fb923c',
+                                  border: '1px solid rgba(251, 146, 60, 0.4)',
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   gap: '0.35rem',
                                 }}
                               >
-                                <UserX size={12} />
-                                Not Shortlisted
+                                <UserX size={12} color="#fb923c" />
+                                <span>Not Shortlisted</span>
                               </span>
                             ) : (
                               <span
                                 style={{
-                                  padding: '0.25rem 0.65rem',
+                                  padding: '0.3rem 0.75rem',
                                   borderRadius: '9999px',
                                   fontSize: '0.78rem',
                                   fontWeight: 600,
-                                  background: 'rgba(245, 158, 11, 0.12)',
+                                  background: 'rgba(245, 158, 11, 0.15)',
                                   color: '#fcd34d',
-                                  border: '1px solid rgba(245, 158, 11, 0.3)',
+                                  border: '1px solid rgba(245, 158, 11, 0.4)',
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   gap: '0.35rem',
                                 }}
                               >
-                                <Clock size={12} />
-                                Pending Decision
+                                <Clock size={12} color="#fcd34d" />
+                                <span>Pending Decision</span>
                               </span>
                             )}
                           </td>
@@ -762,21 +990,24 @@ const AdminReports = () => {
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   gap: '0.35rem',
-                                  padding: '0.3rem 0.65rem',
+                                  padding: '0.32rem 0.75rem',
                                   fontSize: '0.78rem',
                                   fontWeight: 700,
-                                  color: '#ffffff',
+                                  color: report.interview_shortlisted === true ? '#ffffff' : '#34d399',
                                   background:
                                     report.interview_shortlisted === true
                                       ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-                                      : 'rgba(16, 185, 129, 0.15)',
-                                  borderColor: 'rgba(16, 185, 129, 0.4)',
-                                  border: '1px solid rgba(16, 185, 129, 0.4)',
-                                  borderRadius: 'var(--radius-md)',
+                                      : 'rgba(16, 185, 129, 0.12)',
+                                  borderColor:
+                                    report.interview_shortlisted === true
+                                      ? '#10b981'
+                                      : 'rgba(16, 185, 129, 0.4)',
+                                  border: '1px solid',
+                                  borderRadius: '6px',
                                   cursor: 'pointer',
                                 }}
                               >
-                                <UserCheck size={13} color={report.interview_shortlisted === true ? '#fff' : '#10b981'} />
+                                <UserCheck size={13} color={report.interview_shortlisted === true ? '#fff' : '#34d399'} />
                                 <span>Interview Shortlisted</span>
                               </button>
 
@@ -791,21 +1022,24 @@ const AdminReports = () => {
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   gap: '0.35rem',
-                                  padding: '0.3rem 0.65rem',
+                                  padding: '0.32rem 0.75rem',
                                   fontSize: '0.78rem',
                                   fontWeight: 700,
-                                  color: '#ffffff',
+                                  color: report.interview_shortlisted === false ? '#ffffff' : '#fb7185',
                                   background:
                                     report.interview_shortlisted === false
                                       ? 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)'
                                       : 'rgba(244, 63, 94, 0.12)',
-                                  borderColor: 'rgba(244, 63, 94, 0.4)',
-                                  border: '1px solid rgba(244, 63, 94, 0.4)',
-                                  borderRadius: 'var(--radius-md)',
+                                  borderColor:
+                                    report.interview_shortlisted === false
+                                      ? '#f43f5e'
+                                      : 'rgba(244, 63, 94, 0.4)',
+                                  border: '1px solid',
+                                  borderRadius: '6px',
                                   cursor: 'pointer',
                                 }}
                               >
-                                <UserX size={13} color={report.interview_shortlisted === false ? '#fff' : '#fda4af'} />
+                                <UserX size={13} color={report.interview_shortlisted === false ? '#fff' : '#fb7185'} />
                                 <span>Not Shortlisted</span>
                               </button>
                             </div>
@@ -896,10 +1130,10 @@ const AdminReports = () => {
                 style={{
                   width: '100%',
                   padding: '0.55rem 0.85rem 0.55rem 2.25rem',
-                  background: 'var(--bg-surface-elevated)',
-                  border: '1px solid var(--border-medium)',
-                  borderRadius: 'var(--radius-md)',
-                  color: '#fff',
+                  background: '#0f172a',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: '8px',
+                  color: '#ffffff',
                   fontSize: '0.85rem',
                 }}
               />

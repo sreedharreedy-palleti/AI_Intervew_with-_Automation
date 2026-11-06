@@ -284,3 +284,4 @@ async def service_get_interview_reports(db: AsyncIOMotorDatabase) -> List[Dict[s
         })
 
     return reports
+

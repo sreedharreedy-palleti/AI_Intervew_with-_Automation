@@ -81,3 +81,4 @@ async def get_interview_reports(
     """
     reports = await service_get_interview_reports(db)
     return {"reports": reports, "total": len(reports)}
+
